@@ -96,7 +96,7 @@ Before beginning, make sure you have the following tools installed:
 
 3. **Access the Application**:
    - By default, the application will run at `https://localhost:5001` (HTTPS) or `http://localhost:5000` (HTTP).
-   - Use this URL to access the Blazor frontend and interact with the Web API.
+   - Use this URL to access the Angular frontend and interact with the Web API.
 
 ---
 
