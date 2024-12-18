@@ -6,7 +6,7 @@ Its purpose is for employees to be able to:
   1) enter their time for the day
   2) request leave, clearance, expense reimbursement, and overtime
 
-The Time Entry Server repo piece has minimal APIs, uses .NET Aspire, exposes endpoints, uses entity framework (EF) 
+The Time Entry Server repo piece uses C#, has minimal APIs, uses .NET Aspire, exposes endpoints including ones for Swagger to use, uses entity framework (EF) 
 to connect to the MS SQL Server database. 
 
 --
