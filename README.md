@@ -27,7 +27,7 @@ to connect to the MS SQL Server database.
 
 Before beginning, make sure you have the following tools installed:
 
-1. **Visual Studio 2022 or later. **
+1. **.Visual Studio 2022 or later. **
    - Download and install from [Visual Studio Official Site](https://visualstudio.microsoft.com/).  **Free community version is fine.**
    - During installation, select **.NET desktop development** and **ASP.NET and web development** workloads.
 
