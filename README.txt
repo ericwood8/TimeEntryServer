@@ -1,17 +1,15 @@
-
 # TimeEntry
+This is the API layer for the TimeEntryUI and TimeEntryDB repos. 
 
-The TimeEntry is a .NET Aspire Starter App designed to streamline workforce management with a Blazor frontend, Web API backend, and optional Redis caching. This README provides clear steps for setting up, configuring, and running the project locally, making it accessible for both new and experienced developers.
+The TimeEntry is a .NET Aspire designed to streamline workforce management.
+Its purpose is for employees to be able to:
+  1) enter their time for the day
+  2) request leave, clearance, expense reimbursement, and overtime
 
-The Aspire Starter Project is composed of several key elements:
-- **Blazor Frontend**: A modern, interactive frontend framework that enables web applications to run client-side in the browser using WebAssembly.
-- **Web API Backend**: A robust backend service built using ASP.NET Core, designed to handle data management and business logic.
-- **Redis Caching (Optional)**: Redis is used as a caching layer to improve application performance by storing frequently accessed data in memory.
-- **Cloud Support**: Built to integrate with cloud services for scalability and enhanced functionality.
-- **Service Layer**: Contains common services required by the application, providing modularity and separation of concerns.
-- **Common Utilities**: A shared library with utilities and helper functions to simplify development and enhance reusability.
+The Time Entry Server repo piece has minimal APIs, uses .NET Aspire, exposes endpoints, uses entity framework (EF) 
+to connect to the MS SQL Server database. 
 
----
+--
 
 ## Table of Contents
 
@@ -29,20 +27,13 @@ The Aspire Starter Project is composed of several key elements:
 
 Before beginning, make sure you have the following tools installed:
 
-1. **Visual Studio 2022**
+1. **Visual Studio 2022 or later **
    - Download and install from [Visual Studio Official Site](https://visualstudio.microsoft.com/).
    - During installation, select **.NET desktop development** and **ASP.NET and web development** workloads.
 
-2. **.NET 8 SDK**
-   - Download from [.NET Official Website](https://dotnet.microsoft.com/download/dotnet/8.0).
-   - This is essential for building and running .NET 8 applications, including the TimeEntry.
-
-3. **Redis (Optional)**
-   - If you plan to use Redis for caching, you will need to have a Redis server running locally or remotely.
-   - For local testing, you can use Docker to run Redis:
-     ```bash
-     docker run -d --name redis -p 6379:6379 redis
-     ```
+2. **.NET 9 SDK**
+   - Download from [.NET Official Website] (https://dotnet.microsoft.com/en-us/download/dotnet/9.0).
+   - This is essential for building and running .NET 9 applications, including the TimeEntry.
 
 ---
 
@@ -65,7 +56,7 @@ Before beginning, make sure you have the following tools installed:
 
 ### Step 2: Open the Project in Visual Studio
 
-1. Launch **Visual Studio 2022**.
+1. Launch ** Visual Studio **.
 2. Select **Open a project or solution**.
 3. Navigate to the cloned `TimeEntry` folder and open the `.sln` file to load the solution in Visual Studio.
 
@@ -81,41 +72,23 @@ Before beginning, make sure you have the following tools installed:
 ### Step 2: Configure App Settings
 
 1. In **Solution Explorer**, locate `appsettings.json` in the main project folder.
-2. Open `appsettings.json` and configure the necessary settings, including:
-   - **Database Connection** (e.g., SQL Server)
-   - **Redis Configuration** (if using Redis caching)
-   
-   Example configuration for Redis:
-   ```json
-   "Redis": {
-       "ConnectionString": "localhost:6379",
-       "InstanceName": "WorkForceCache"
-   }
-   ```
+2. Open `appsettings.json` for the ApiService and AppHost projects and configure the necessary settings, including:
+   - **Database Connection String ** (e.g., SQL Server)
+3. Open `TimeEntryContextFactory.cs` for the Data project and configure the necessary settings, including:
+   - **Database Connection String ** (e.g., SQL Server)
+4. Save your changes.
 
-3. Save your changes.
+### Step 3: Set Up the Database 
 
-### Step 3: Set Up the Database (Optional)
-
-If your project requires a database, follow these steps to set up the database:
-
-1. Open **Package Manager Console** in Visual Studio:
-   - Go to **Tools** > **NuGet Package Manager** > **Package Manager Console**.
-
-2. Run the following command to apply migrations:
-
-   ```powershell
-   Update-Database
-   ```
-
-   This command will create the database schema based on the defined models and migrations.
+1. Unzip the zip files found in TimeEntryDB.
+2. Follow the TimeEntryDB instructions to attach the database.
 
 ---
 
 ## Running the Project
 
 1. **Set the Startup Project**:
-   - In **Solution Explorer**, right-click the main project (e.g., `TimeEntry.Web`) and select **Set as StartUp Project**.
+   - In **Solution Explorer**, right-click the TimeEntry.AppHost project and select **Set as StartUp Project**.
 
 2. **Run the Project**:
    - Click the **Run** button (or press `F5`) to start the application.
@@ -124,51 +97,6 @@ If your project requires a database, follow these steps to set up the database:
 3. **Access the Application**:
    - By default, the application will run at `https://localhost:5001` (HTTPS) or `http://localhost:5000` (HTTP).
    - Use this URL to access the Blazor frontend and interact with the Web API.
-
----
-
-## Additional Configuration
-
-### Redis Configuration (Optional)
-
-If you are using Redis for caching, ensure that your Redis server is running. You can configure the Redis server details in `appsettings.json`.
-
-Example Redis configuration in `appsettings.json`:
-
-```json
-"Redis": {
-    "ConnectionString": "localhost:6379",
-    "InstanceName": "WorkForceCache"
-}
-```
-
-### Environment Variables
-
-Some settings may require environment variables. To add them in Visual Studio:
-
-1. Right-click on the project in **Solution Explorer** and go to **Properties**.
-2. In the **Debug** section, add any environment variables required by the application.
-
----
-
-## Troubleshooting
-
-If you run into issues, here are some common solutions:
-
-1. **NuGet Package Issues**:
-   - Right-click the solution and select **Restore NuGet Packages** to ensure all dependencies are installed.
-
-2. **Redis Connection Issues**:
-   - Confirm that Redis is running. Use `docker ps` to check if the Redis container is active or start it using the command provided above.
-
-3. **Database Errors**:
-   - Ensure your connection string in `appsettings.json` is correctly configured.
-   - Verify that your SQL Server instance is running and accessible.
-
-4. **Port Conflicts**:
-   - If the application doesn’t start, it might be due to a port conflict. Update the launch settings in `launchSettings.json` to use a different port.
-
-If you need further assistance, check the **Issues** section on the GitHub repository or contact the maintainers.
 
 ---
 
