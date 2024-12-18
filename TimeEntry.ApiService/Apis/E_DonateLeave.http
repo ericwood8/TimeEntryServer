@@ -1,0 +1,3 @@
+@projectUrl=http://localhost:8080
+
+GET {{projectUrl}}/api/donates
