@@ -92,7 +92,7 @@ Before beginning, make sure you have the following tools installed:
 
 2. **Run the Project**:
    - Click the **Run** button (or press `F5`) to start the application.
-   - Visual Studio will compile the application and open it in a browser if it’s a web application.
+   - Visual Studio will compile the application and open it in the default browser.
 
 3. **Access the Application**:
    - By default, the application will run at `https://localhost:5001` (HTTPS) or `http://localhost:5000` (HTTP).
