@@ -9,7 +9,7 @@ Its purpose is for employees to be able to:
 The Time Entry Server repo piece uses C#, has minimal APIs, uses .NET Aspire, exposes endpoints including ones for Swagger to use, uses entity framework (EF) 
 to connect to the MS SQL Server database. 
 
---
+---
 
 ## Table of Contents
 
