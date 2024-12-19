@@ -1,4 +1,4 @@
-# TimeEntry
+# Time Entry
 This is the API layer for the TimeEntryUI and TimeEntryDB repos. 
 
 The TimeEntry is a .NET Aspire designed to streamline workforce management.
