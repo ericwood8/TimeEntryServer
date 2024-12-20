@@ -9,9 +9,11 @@ Its purpose is for employees to be able to:
 The Time Entry Server repo piece uses C#, has minimal APIs, uses .NET Aspire, exposes endpoints including ones for Swagger to use, uses entity framework (EF) 
 to connect to the MS SQL Server database. 
 
+IMPORTANT - Run the TimeEntryServer solution in Visual Studio. This drives everything else.
+
+![ClickHere](https://github.com/user-attachments/assets/dff45eef-31ef-4e78-9416-44e5dd0db30b)
 ![Employees](https://github.com/user-attachments/assets/9d1aade3-7e04-4732-ad37-224c5a1fbb1e)
 ![EditDepartment](https://github.com/user-attachments/assets/0a467390-34f1-4397-a500-ff17015e6bd0)
-![ClickHere](https://github.com/user-attachments/assets/dff45eef-31ef-4e78-9416-44e5dd0db30b)
 
 ---
 
