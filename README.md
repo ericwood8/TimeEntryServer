@@ -123,7 +123,7 @@ Search for "ConnectionString" and fix all of them.
 
 ## To-Do
 
-1) Authenication
+1) Authentication
 2) Investigate possible over-subscription of things in Angular.
 
 ---
