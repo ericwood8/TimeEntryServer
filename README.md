@@ -36,7 +36,8 @@ Before beginning, make sure you have the following tools installed:
 
 1. **.Visual Studio 2022 or later.**
    - Download and install from [Visual Studio Official Site](https://visualstudio.microsoft.com/).  **Free community version is fine.**
-   - During installation, select **.NET desktop development** and **ASP.NET and web development** workloads.
+   - During installation, select **.NET Aspire** workload:  ( https://learn.microsoft.com/en-us/dotnet/aspire/fundamentals/dotnet-aspire-sdk )
+   - Also during installation, I recommend selecting if you do not already have them: **.NET desktop development** and **ASP.NET and web development** workloads.
 
 2. **.NET 9 SDK**
    - Download from [.NET Official Website] (https://dotnet.microsoft.com/en-us/download/dotnet/9.0).
