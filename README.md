@@ -121,6 +121,12 @@ Search for "ConnectionString" and fix all of them.
 
 ---
 
+## To-Do
+
+Authenication
+
+---
+
 ## Contributing
 
 1. **Fork the Repository**: Click on the **Fork** button on the GitHub repository.
