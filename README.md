@@ -10,7 +10,7 @@ The Time Entry Server repo piece uses **C#**, **.NET 9**, has minimal APIs, uses
 to connect to the **MS SQL Server** database. 
 
 IMPORTANT - 1) Run the TimeEntryServer solution in Visual Studio. This drives everything else.
-  2) Change the "SQL Connection String" so it will work in your environment (see DB repo for details).
+  2) Change the "SQL Connection String" in 3 spots so it will work in your environment (see DB repo for details).
 
 ![ClickHere](https://github.com/user-attachments/assets/dff45eef-31ef-4e78-9416-44e5dd0db30b)
 ![Employees](https://github.com/user-attachments/assets/9d1aade3-7e04-4732-ad37-224c5a1fbb1e)
