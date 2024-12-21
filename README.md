@@ -5,6 +5,7 @@ The TimeEntry is a .NET Aspire designed to streamline workforce management.
 Its purpose is for employees to be able to:
   1) enter their time for the day
   2) request leave, clearance, expense reimbursement, and overtime.
+
 This is a work-in-progress repo.  The purpose of this application is to show the flow of data back and forth, not really to be a useful fully functioning application.
 
 The Time Entry Server repo piece uses _C#_, _.NET 9_, has _minimal APIs_, uses _.NET Aspire_, exposes endpoints including ones for _Swagger_ to use, uses _entity framework_ (EF) 
