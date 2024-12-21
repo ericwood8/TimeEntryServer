@@ -6,7 +6,7 @@ Its purpose is for employees to be able to:
   1) enter their time for the day
   2) request leave, clearance, expense reimbursement, and overtime
 
-The Time Entry Server repo piece uses _C#_, _.NET 9_, has minimal APIs, uses _.NET Aspire_, exposes endpoints including ones for _Swagger_ to use, uses _entity framework_ (EF) 
+The Time Entry Server repo piece uses _C#_, _.NET 9_, has _minimal APIs_, uses _.NET Aspire_, exposes endpoints including ones for _Swagger_ to use, uses _entity framework_ (EF) 
 to connect to the _MS SQL Server_ database. 
 
 IMPORTANT - 1) Run the TimeEntryServer solution in Visual Studio. This drives everything else.
