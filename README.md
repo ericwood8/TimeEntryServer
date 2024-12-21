@@ -47,7 +47,11 @@ Before beginning, make sure you have the following tools installed:
   
 3. **Microsoft SQL Server**
     - Download and install MS SQL Server:  https://www.microsoft.com/en-us/sql-server/sql-server-downloads
-    - **The free Express version is fine** 
+    - **The free Express version is fine**
+      
+4. Communication with database
+   This solution requires communicating to a database.  Change the "SQL Connection String" in 3 spots so it will work in your environment.
+Search for "ConnectionString" and fix all of them.
 
 ---
 
