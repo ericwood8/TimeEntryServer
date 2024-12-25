@@ -123,9 +123,10 @@ Search for "ConnectionString" and fix all of them.
 
 ## To-Do
 
-1) Authentication
+1) Authentication.  Potential inspiration at https://github.com/tbarracha/Angspire .
 2) Investigate possible over-subscription of things in Angular.
-
+3) Perhaps infusion of AI with potential inspiration at https://github.com/thangchung/practical-dotnet-aspire and https://dev.to/thangchung/coffeeshop-app-infused-with-ai-intelligent-apps-development-202k .
+   
 ---
 
 ## Contributing
