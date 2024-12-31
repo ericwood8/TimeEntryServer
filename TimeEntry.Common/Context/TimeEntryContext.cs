@@ -45,7 +45,14 @@ namespace TimeEntry.Common.Context
                    .AddJsonFile("appsettings.json")
                    .Build();
                 var connectionString = configuration.GetConnectionString("DbConnectionString");
-                optionsBuilder.UseSqlServer(connectionString);
+                try
+                {
+                    optionsBuilder.UseSqlServer(connectionString);
+                }
+                catch (Exception ex) 
+                {
+                    throw new Exception("Unable to establish connection OR no attached database.  " + ex.Message); 
+                }
             }
         }
 
