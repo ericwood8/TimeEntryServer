@@ -1,7 +1,4 @@
 ﻿using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
-using TimeEntry.Common.Context;
-using TimeEntry.Common.Entities;
 using TimeEntry.Common.Models;
 
 namespace TimeEntry.Common.Repositories;
@@ -58,7 +55,7 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
     }
 
     // **** special ****
-    public async Task<List<T>> GetAll()
+    public async Task<List<T>> GetAllActive()
     {
         return await _dbSet
             .Where(d => d.IsActive) // only fetch active
@@ -163,7 +160,7 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
     // **** special ****
     private bool IsDupOnCreate(string newName)
     {
-        var uniqueRow = _context.Set<T>().FirstOrDefault(d => d.Name.Equals(newName.Trim()) && d.IsActive);
+        var uniqueRow = _dbSet.FirstOrDefault(d => d.Name.Equals(newName.Trim()) && d.IsActive);
         return uniqueRow != null;  // already exists 
     }
 
@@ -171,11 +168,11 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
     private bool IsDupOnUpdate(int preChangeId, string newName)
     {
         // extra check on Update
-        var preChangeRow = _context.Set<T>().Find(preChangeId)!;
+        var preChangeRow = _dbSet.Find(preChangeId)!;
         if (preChangeRow.Name.Equals(newName, StringComparison.OrdinalIgnoreCase))
             return false; // don't check for dup if same name (because of course it will seem to be duplicate)
 
-        var uniqueRow = _context.Set<T>().FirstOrDefault(d => d.Name.Equals(newName.Trim()) && d.IsActive);
+        var uniqueRow = _dbSet.FirstOrDefault(d => d.Name.Equals(newName.Trim()) && d.IsActive);
         return uniqueRow != null;  // already exists 
     }
     #endregion

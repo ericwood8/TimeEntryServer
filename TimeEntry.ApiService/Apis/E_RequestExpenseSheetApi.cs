@@ -50,11 +50,9 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAllIncludingDetails([FromServices] TimeEntryContext context)
     {
-        var results = await GetContext(context)
-            .Include(s => s.ExpenseDetails)
-            .ToListAsync();
-
-        return Ok(results);
+        E_RequestExpenseSheetRepo repo = new(context);
+        var rows = await repo.GetAllIncludingDetails();
+        return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
@@ -91,10 +89,5 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
             return Results.NotFound(); // cannot delete because does not exist
         else
             return Results.BadRequest(); // cannot delete because "in use"
-    }
-
-    private static DbSet<E_RequestExpenseSheet> GetContext(TimeEntryContext context)
-    {
-        return context.E_RequestExpenseSheet;
     }
 }

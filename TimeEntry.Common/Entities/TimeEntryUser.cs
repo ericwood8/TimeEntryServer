@@ -3,7 +3,7 @@ using TimeEntry.Common.Enums;
 
 namespace TimeEntry.Common.Entities;
 
-public class TimeEntryUser : BaseEntity
+public class TimeEntryUser : BaseNameActiveEntity
 {
     #region Omitted
     [Key]
@@ -25,11 +25,6 @@ public class TimeEntryUser : BaseEntity
     // enums
     public SY_Role SY_Role { get; set; }
 
-
-    [Display(Name = "User Name", Description = "User Name")]
-    [StringLength(50)]
-    public required string UserName { get; set; }
-
     [Display(Name = "Pword", Description = "Pword")]
     [StringLength(50)]
     public required string Pword { get; set; }
@@ -50,13 +45,8 @@ public class TimeEntryUser : BaseEntity
     [DataType(DataType.PhoneNumber)]
     public string? PhoneNumber { get; set; }
 
-    [Display(Name = "Active", Description = "Active")]
-    public required bool IsActive { get; set; } = true;
-
     [Display(Name = "When Left", Description = "When Left")]
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
     [DataType(DataType.Date)]
     public DateTime? WhenLeft { get; set; }
-
-    public override string? ToString() => UserName;
 }

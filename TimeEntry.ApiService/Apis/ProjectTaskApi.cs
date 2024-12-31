@@ -9,7 +9,7 @@ public class ProjectTaskApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         BreakIntoStrings(out string singular, out string plural, out string apiSubDir);
 
         // Get all 
-        app.MapGet(apiSubDir, GetAll)
+        app.MapGet(apiSubDir, GetAllActive)
           .WithName($"Get{plural}")
           .WithOpenApi()
           .Produces<IEnumerable<T>>()
@@ -65,10 +65,10 @@ public class ProjectTaskApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
+    private static async Task<IResult> GetAllActive([FromServices] TimeEntryContext context)
     {
         ProjectTaskRepo repo = new(context);
-        var rows = await repo.GetAll();
+        var rows = await repo.GetAllActive();
         return Ok(rows);
     }
 

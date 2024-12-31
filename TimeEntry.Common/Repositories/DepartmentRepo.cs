@@ -1,7 +1,4 @@
-﻿using TimeEntry.Common.Context;
-using TimeEntry.Common.Entities;
-
-namespace TimeEntry.Common.Repositories;
+﻿namespace TimeEntry.Common.Repositories;
 
 public class DepartmentRepo : NameActiveRepo<Department>
 {

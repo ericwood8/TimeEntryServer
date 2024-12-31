@@ -1,5 +1,4 @@
 ﻿using System.Linq.Expressions;
-using TimeEntry.Common.Entities;
 
 namespace TimeEntry.Common.Repositories;
 

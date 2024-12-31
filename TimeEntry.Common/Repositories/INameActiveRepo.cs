@@ -1,6 +1,4 @@
 ﻿using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
-using TimeEntry.Common.Entities;
 
 namespace TimeEntry.Common.Repositories;
 
@@ -13,7 +11,7 @@ public interface INameActiveRepo<T> where T : BaseNameActiveEntity
     public Task<T?> GetAsync(Expression<Func<T, bool>> predicate);
 
     //--------- GET ROWS -----------------
-    public Task<List<T>> GetAll();
+    public Task<List<T>> GetAllActive();
     public Task<List<T>> GetByName(string name);
 
     //public Task<List<T>> GetAllAsync();

@@ -74,8 +74,9 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     //private static async Task<Results<Ok<PaginatedItems<Department>>, BadRequest<string>>> GetPage([FromServices] TimeEntryContext context, [AsParameters] PaginationRequest paginationRequest)
     //{        
     //    var pageIndex = paginationRequest.PageIndex;
-    //    var totalItems = await GetContext(context).LongCountAsync();
-    //    var itemsOnPage = await GetContext(context)
+    //    DepartmentRepo repo = new(context); 
+    //    var totalItems = repo.CountAsync();
+    //    var itemsOnPage = await repo.GetPage(pageSize, pageIndex)
     //        .OrderBy(c => c.Name)
     //        .Skip(_pageSize * pageIndex)
     //        .Take(_pageSize)

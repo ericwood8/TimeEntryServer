@@ -60,17 +60,14 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        var results = await GetContext(context)
-            .Where(t => t.IsActive) // only fetch active
-          .OrderBy(c => c.UserName)
-          .ToListAsync();
-
-        return Ok(results);
+        TimeEntryUserRepo repo = new(context);
+        var rows = await repo.GetAllActive();
+        return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<TimeEntryUser> repo = new(context);
+        TimeEntryUserRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
@@ -80,46 +77,41 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         if (name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
 
-        var rows = await GetContext(context)
-            .Where(d => d.UserName.StartsWith(name) && d.IsActive)
-            .ToListAsync();
+        TimeEntryUserRepo repo = new(context);
+        var rows = await repo.GetByName(name);
         return rows != null ? Results.Ok(rows) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] TimeEntryUser newRow)
     {
-        newRow.UserName = newRow.UserName.Trim();
-        if (newRow.UserName.IsNameBad())
+        newRow.Name = newRow.Name.Trim();
+        if (newRow.Name.IsNameBad())
             return Results.BadRequest();  // 400 error if bad characters or empty
-        else if (IsDup(context, newRow.UserName))
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name 
 
-        GenericRepo<TimeEntryUser> repo = new(context);
+        TimeEntryUserRepo repo = new(context);
         bool success = await repo.AddAsync(newRow);
         if (success)
             return Results.Created($"/api{apiSubDir}/{newRow.TimeEntryUserId}", newRow);
         else
-            return Results.NoContent();
+            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] TimeEntryUser updatedRow)
     {
-        if (updatedRow.UserName.IsNameBad())
+        if (updatedRow.Name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
-        else if (IsDup(context, updatedRow.UserName))
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 
-        var rowToUpdate = await GetContext(context).FindAsync(id);
-        if (rowToUpdate == null) return Results.NotFound();
+        TimeEntryUserRepo repo = new(context);
+        //if (repo.IsDupOnCreate(updatedRow.Name))
+        //    return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 
-        GenericRepo<TimeEntryUser> repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<TimeEntryUser> repo = new(context);
+        TimeEntryUserRepo repo = new(context);
         var successNum = await repo.DeleteAsync("TimeEntryUser", id);
         if (successNum == 0)
             return Results.Ok();
@@ -127,16 +119,5 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
             return Results.NotFound(); // cannot delete because does not exist
         else
             return Results.BadRequest(); // cannot delete because "in use"
-    }
-
-    private static DbSet<TimeEntryUser> GetContext(TimeEntryContext context)
-    {
-        return context.TimeEntryUser;
-    }
-
-    private static bool IsDup(TimeEntryContext context, string newName)
-    {
-        var uniqueRow = GetContext(context).FirstOrDefault(d => d.UserName.Equals(newName.Trim()) && d.IsActive);
-        return (uniqueRow != null);  // already exists 
     }
 }

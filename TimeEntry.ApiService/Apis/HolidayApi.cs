@@ -57,14 +57,14 @@ public class HolidayApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        GenericRepo<Holiday> repo = new(context);
+        HolidayRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.Date);
         return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<Holiday> repo = new(context);
+        HolidayRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
@@ -74,7 +74,8 @@ public class HolidayApi<T> : BaseApi<T> where T : class
         if (name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
 
-        var rows = await GetContext(context).Where(s => s.Name.StartsWith(name)).ToListAsync();
+        HolidayRepo repo = new(context);
+        var rows = await repo.GetByName(name);
         return rows != null ? Results.Ok(rows) : Results.NotFound();
     }
 
@@ -85,7 +86,7 @@ public class HolidayApi<T> : BaseApi<T> where T : class
             return Results.BadRequest();  // 400 error if bad characters or empty
         // SPECIAL - duplicate names is fine on holidays
 
-        GenericRepo<Holiday> repo = new(context);
+        HolidayRepo repo = new(context);
         bool success = await repo.AddAsync(newRow);
         if (success)
             return Results.Created($"/api/holidays/{newRow.HolidayId}", newRow);
@@ -99,14 +100,14 @@ public class HolidayApi<T> : BaseApi<T> where T : class
             return Results.BadRequest(); // 400 error if bad characters or empty
         // SPECIAL - duplicate names is fine on holidays
 
-        GenericRepo<Holiday> repo = new(context);
+        HolidayRepo repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<Holiday> repo = new(context);
+        HolidayRepo repo = new(context);
         var successNum = await repo.DeleteAsync("Holiday", id);
         if (successNum == 0)
             return Results.Ok();
@@ -114,10 +115,5 @@ public class HolidayApi<T> : BaseApi<T> where T : class
             return Results.NotFound(); // cannot delete because does not exist
         else
             return Results.BadRequest(); // cannot delete because "in use"
-    }
-
-    private static DbSet<Holiday> GetContext(TimeEntryContext context)
-    {
-        return context.Holiday;
     }
 }

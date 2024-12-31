@@ -47,12 +47,9 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAllOfTimesheet([FromServices] TimeEntryContext context, int timesheetId)
     {
-        var results = await GetContext(context)
-          .Where(t => t.E_TimeSheetId.Equals(timesheetId))
-          .OrderBy(c => c.ProjectId)
-          .ToListAsync();
-
-        return Ok(results);
+        E_TimeSheetDetailRepo repo = new(context);
+        var row = await repo.GetAllOfTimesheet(timesheetId);
+        return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
@@ -89,10 +86,5 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
             return Results.NotFound(); // cannot delete because does not exist
         else
             return Results.BadRequest(); // cannot delete because "in use"
-    }
-
-    private static DbSet<E_TimeSheetDetail> GetContext(TimeEntryContext context)
-    {
-        return context.E_TimeSheetDetail;
     }
 }

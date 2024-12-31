@@ -1,8 +1,4 @@
-﻿using System.Linq;
-using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
-using TimeEntry.Common.Context;
-using TimeEntry.Common.Entities;
+﻿using System.Linq.Expressions;
 using TimeEntry.Common.Models;
 
 namespace TimeEntry.Common.Repositories;
