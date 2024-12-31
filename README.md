@@ -134,6 +134,7 @@ Search for "ConnectionString" and fix all of them.
 2) Investigate possible over-subscription of things in Angular.
 3) Perhaps infusion of AI with potential inspiration at https://github.com/thangchung/practical-dotnet-aspire and https://dev.to/thangchung/coffeeshop-app-infused-with-ai-intelligent-apps-development-202k .
 4) Add API pagination rather than purely Angular pagination.
+5) Finish requests and time sheet screens and overall functionality.
    
 ---
 
