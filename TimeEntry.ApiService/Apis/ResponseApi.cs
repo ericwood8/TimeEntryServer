@@ -48,52 +48,44 @@ public class ResponseApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        var results = await GetContext(context)
-          .OrderByDescending(c => c.WhenResponded)
-          .ToListAsync();
-
-        return Ok(results);
+        GenericRepo<Response> repo = new(context);
+        var rows = await repo.GetAllOrderByDescending(c => c.WhenResponded);
+        return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        var row = await GetContext(context).FindAsync(id);
+        GenericRepo<Response> repo = new(context);
+        var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] Response newRow)
     {
-        GetContext(context).Add(newRow);
-        await context.SaveChangesAsync();
-        return Results.Created($"/api{apiSubDir}/{newRow.ResponseId}", newRow);
+        GenericRepo<Response> repo = new(context);
+        bool success = await repo.AddAsync(newRow);
+        if (success)
+            return Results.Created($"/api{apiSubDir}/{newRow.ResponseId}", newRow);
+        else
+            return Results.NoContent();        
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Response updatedRow)
     {
-        var rowToUpdate = await GetContext(context).FindAsync(id);
-        if (rowToUpdate == null) return Results.NotFound();
-
-        rowToUpdate.ManagerId = updatedRow.ManagerId;
-        rowToUpdate.E_RequestId = updatedRow.E_RequestId;
-        rowToUpdate.ResponseTypeId = updatedRow.ResponseTypeId;
-        rowToUpdate.WhenResponded = updatedRow.WhenResponded;
-
-        await context.SaveChangesAsync();
-        return Results.Ok(rowToUpdate);
+        GenericRepo<Response> repo = new(context);
+        var postUpdate = await repo.UpdateAsync(id, updatedRow);
+        return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        var rowToDelete = await GetContext(context).FindAsync(id);
-        if (rowToDelete == null) return Results.NotFound();
-
-        GetContext(context).Remove(rowToDelete);
-        await context.SaveChangesAsync();
-        return Results.NoContent();
-    }
-
-    private static DbSet<Response> GetContext(TimeEntryContext context)
-    {
-        return context.Response;
+        GenericRepo<Response> repo = new(context);
+        var successNum = await repo.DeleteAsync("Response", id);
+        if (successNum == 0)
+            return Results.Ok();
+        else if (successNum == -1)
+            return Results.NotFound(); // cannot delete because does not exist
+        else
+            return Results.BadRequest(); // cannot delete because "in use"
     }
 }

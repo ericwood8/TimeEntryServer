@@ -12,7 +12,7 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         string plural = singular + "s";
 
         // Get all
-        app.MapGet(apiSubDir, GetAll)
+        app.MapGet(apiSubDir, GetAllIncludingDetails)
        .WithName($"Get{plural}")
        .WithOpenApi()
        .Produces<IEnumerable<T>>()
@@ -48,7 +48,7 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
+    private static async Task<IResult> GetAllIncludingDetails([FromServices] TimeEntryContext context)
     {
         var results = await GetContext(context)
             .Include(s => s.ExpenseDetails)
@@ -59,38 +59,38 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        var row = await GetContext(context).FindAsync(id);
+        GenericRepo<E_RequestExpenseSheet> repo = new(context);
+        var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_RequestExpenseSheet newRow)
     {
-        GetContext(context).Add(newRow);
-        await context.SaveChangesAsync();
-        return Results.Created($"/api{apiSubDir}/{newRow.RequestExpenseSheetId}", newRow);
+        GenericRepo<E_RequestExpenseSheet> repo = new(context);
+        bool success = await repo.AddAsync(newRow);
+        if (success)
+            return Results.Created($"/api{apiSubDir}/{newRow.RequestExpenseSheetId}", newRow);
+        else
+            return Results.NoContent();
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] E_RequestExpenseSheet updatedRow)
     {
-        var rowToUpdate = await GetContext(context).FindAsync(id);
-        if (rowToUpdate == null) return Results.NotFound();
-
-        rowToUpdate.EmployeeId = updatedRow.EmployeeId;
-        rowToUpdate.ProjectId = updatedRow.ProjectId;
-        rowToUpdate.Notes = updatedRow.Notes;
-
-        await context.SaveChangesAsync();
-        return Results.Ok(rowToUpdate);
+        GenericRepo<E_RequestExpenseSheet> repo = new(context);
+        var postUpdate = await repo.UpdateAsync(id, updatedRow);
+        return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        var rowToDelete = await GetContext(context).FindAsync(id);
-        if (rowToDelete == null) return Results.NotFound();
-
-        GetContext(context).Remove(rowToDelete);
-        await context.SaveChangesAsync();
-        return Results.NoContent();
+        GenericRepo<E_RequestExpenseSheet> repo = new(context);
+        var successNum = await repo.DeleteAsync("E_RequestExpenseSheet", id);
+        if (successNum == 0)
+            return Results.Ok();
+        else if (successNum == -1)
+            return Results.NotFound(); // cannot delete because does not exist
+        else
+            return Results.BadRequest(); // cannot delete because "in use"
     }
 
     private static DbSet<E_RequestExpenseSheet> GetContext(TimeEntryContext context)

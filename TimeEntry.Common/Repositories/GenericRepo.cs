@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 using TimeEntry.Common.Context;
 using TimeEntry.Common.Entities;
 using TimeEntry.Common.Models;

@@ -70,7 +70,8 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        var row = await GetContext(context).FindAsync(id);
+        GenericRepo<TimeEntryUser> repo = new(context);
+        var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
@@ -93,9 +94,12 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         else if (IsDup(context, newRow.UserName))
             return Results.UnprocessableEntity(); // 422 error if Duplicate Name 
 
-        GetContext(context).Add(newRow);
-        await context.SaveChangesAsync();
-        return Results.Created($"/api{apiSubDir}/{newRow.TimeEntryUserId}", newRow);
+        GenericRepo<TimeEntryUser> repo = new(context);
+        bool success = await repo.AddAsync(newRow);
+        if (success)
+            return Results.Created($"/api{apiSubDir}/{newRow.TimeEntryUserId}", newRow);
+        else
+            return Results.NoContent();
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] TimeEntryUser updatedRow)
@@ -108,29 +112,21 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         var rowToUpdate = await GetContext(context).FindAsync(id);
         if (rowToUpdate == null) return Results.NotFound();
 
-        rowToUpdate.UserName = updatedRow.UserName;
-        rowToUpdate.SY_RoleId = updatedRow.SY_RoleId;
-        rowToUpdate.EmployeeId = updatedRow.EmployeeId;
-        rowToUpdate.Pword = updatedRow.Pword;
-        rowToUpdate.Hint = updatedRow.Hint;
-        rowToUpdate.Answer = updatedRow.Answer;
-        rowToUpdate.IsTwoFactorAuth = updatedRow.IsTwoFactorAuth;
-        rowToUpdate.PhoneNumber = updatedRow.PhoneNumber;
-        rowToUpdate.IsActive = updatedRow.IsActive;
-        rowToUpdate.WhenLeft = updatedRow.WhenLeft;
-
-        await context.SaveChangesAsync();
-        return Results.Ok(rowToUpdate);
+        GenericRepo<TimeEntryUser> repo = new(context);
+        var postUpdate = await repo.UpdateAsync(id, updatedRow);
+        return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        var rowToDelete = await GetContext(context).FindAsync(id);
-        if (rowToDelete == null) return Results.NotFound();
-
-        GetContext(context).Remove(rowToDelete);
-        await context.SaveChangesAsync();
-        return Results.NoContent();
+        GenericRepo<TimeEntryUser> repo = new(context);
+        var successNum = await repo.DeleteAsync("TimeEntryUser", id);
+        if (successNum == 0)
+            return Results.Ok();
+        else if (successNum == -1)
+            return Results.NotFound(); // cannot delete because does not exist
+        else
+            return Results.BadRequest(); // cannot delete because "in use"
     }
 
     private static DbSet<TimeEntryUser> GetContext(TimeEntryContext context)
@@ -140,7 +136,7 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
 
     private static bool IsDup(TimeEntryContext context, string newName)
     {
-        var unqiueRow = GetContext(context).FirstOrDefault(d => d.UserName.Equals(newName.Trim()) && d.IsActive);
-        return (unqiueRow != null);  // already exists 
+        var uniqueRow = GetContext(context).FirstOrDefault(d => d.UserName.Equals(newName.Trim()) && d.IsActive);
+        return (uniqueRow != null);  // already exists 
     }
 }

@@ -49,16 +49,15 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        var results = await GetContext(context)
-          .OrderBy(c => c.WhenRequested)
-          .ToListAsync();
-
-        return Ok(results);
+        GenericRepo<E_Request> repo = new(context);
+        var rows = await repo.GetAllOrderByDescending(c => c.WhenRequested);
+        return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        var row = await GetContext(context).FindAsync(id);
+        GenericRepo<E_Request> repo = new(context);
+        var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
@@ -90,50 +89,36 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         {
             newRow.WhenRequested = DateTime.Now;
         }
-        
-        GetContext(context).Add(newRow);
-        await context.SaveChangesAsync();
-        return Results.Created($"/api{_apiSubDir}/{newRow.RequestId}", newRow);
+
+        GenericRepo<E_Request> repo = new(context);
+        bool success = await repo.AddAsync(newRow);
+        if (success)
+            return Results.Created($"/api{_apiSubDir}/{newRow.RequestId}", newRow);
+        else
+            return Results.NoContent();
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] E_Request updatedRow)
     {
-        var rowToUpdate = await GetContext(context).FindAsync(id);
-        if (rowToUpdate == null) return Results.NotFound();
+        //if (rowToUpdate.SY_RequestStatusTypeId != updatedRow.SY_RequestStatusTypeId)
+        //{
+        //    rowToUpdate.StatusDate = DateTime.Now;
+        //}
 
-        rowToUpdate.WhenRequested = updatedRow.WhenRequested;
-        rowToUpdate.EmployeeId = updatedRow.EmployeeId;
-        rowToUpdate.SY_RequestStatusTypeId = updatedRow.SY_RequestStatusTypeId;
-        if (rowToUpdate.SY_RequestStatusTypeId != updatedRow.SY_RequestStatusTypeId)
-        {
-            rowToUpdate.StatusDate = DateTime.Now;
-        }
-        rowToUpdate.ClearanceTypeId = updatedRow.ClearanceTypeId;
-        rowToUpdate.OvertimeTypeId = updatedRow.OvertimeTypeId;
-        rowToUpdate.LeaveTypeId = updatedRow.LeaveTypeId;
-        rowToUpdate.ExpenseTypeId = updatedRow.ExpenseTypeId;
-        rowToUpdate.Reason = updatedRow.Reason;
-        rowToUpdate.LeaveStart = updatedRow.LeaveStart;
-        rowToUpdate.LeaveEnd = updatedRow.LeaveEnd;
-        rowToUpdate.StatusDate = updatedRow.StatusDate;
-        rowToUpdate.OvertimeHrsRequested = updatedRow.OvertimeHrsRequested;
-
-        await context.SaveChangesAsync();
-        return Results.Ok(rowToUpdate);
+        GenericRepo<E_Request> repo = new(context);
+        var postUpdate = await repo.UpdateAsync(id, updatedRow);
+        return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        var rowToDelete = await GetContext(context).FindAsync(id);
-        if (rowToDelete == null) return Results.NotFound();
-
-        GetContext(context).Remove(rowToDelete);
-        await context.SaveChangesAsync();
-        return Results.NoContent();
-    }
-
-    private static DbSet<E_Request> GetContext(TimeEntryContext context)
-    {
-        return context.E_Request;
+        GenericRepo<E_Request> repo = new(context);
+        var successNum = await repo.DeleteAsync("E_Request", id);
+        if (successNum == 0)
+            return Results.Ok();
+        else if (successNum == -1)
+            return Results.NotFound(); // cannot delete because does not exist
+        else
+            return Results.BadRequest(); // cannot delete because "in use"
     }
 }

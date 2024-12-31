@@ -57,16 +57,15 @@ public class HolidayApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        var results = await GetContext(context)
-          .OrderBy(c => c.Date)
-          .ToListAsync();
-
-        return Ok(results);
+        GenericRepo<Holiday> repo = new(context);
+        var rows = await repo.GetAllOrderByDescending(c => c.Date);
+        return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        var row = await GetContext(context).FindAsync(id);
+        GenericRepo<Holiday> repo = new(context);
+        var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
@@ -86,9 +85,12 @@ public class HolidayApi<T> : BaseApi<T> where T : class
             return Results.BadRequest();  // 400 error if bad characters or empty
         // SPECIAL - duplicate names is fine on holidays
 
-        GetContext(context).Add(newRow);
-        await context.SaveChangesAsync();
-        return Results.Created($"/api/holidays/{newRow.HolidayId}", newRow);
+        GenericRepo<Holiday> repo = new(context);
+        bool success = await repo.AddAsync(newRow);
+        if (success)
+            return Results.Created($"/api/holidays/{newRow.HolidayId}", newRow);
+        else
+            return Results.NoContent();        
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Holiday updatedRow)
@@ -97,27 +99,21 @@ public class HolidayApi<T> : BaseApi<T> where T : class
             return Results.BadRequest(); // 400 error if bad characters or empty
         // SPECIAL - duplicate names is fine on holidays
 
-        var rowToUpdate = await GetContext(context).FindAsync(id);
-        if (rowToUpdate == null) return Results.NotFound();
-
-        rowToUpdate.SY_IsoCountry_Alpha3Code = updatedRow.SY_IsoCountry_Alpha3Code;
-        rowToUpdate.Date = updatedRow.Date;
-        rowToUpdate.Name = updatedRow.Name;
-        rowToUpdate.SY_DisplayId = updatedRow.SY_DisplayId;
-
-        await context.SaveChangesAsync();
-        return Results.Ok(rowToUpdate);
+        GenericRepo<Holiday> repo = new(context);
+        var postUpdate = await repo.UpdateAsync(id, updatedRow);
+        return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        var rowToDelete = await GetContext(context).FindAsync(id);
-        if (rowToDelete == null) return Results.NotFound();
-
-        GetContext(context).Remove(rowToDelete);
-        await context.SaveChangesAsync();
-
-        return Results.NoContent();
+        GenericRepo<Holiday> repo = new(context);
+        var successNum = await repo.DeleteAsync("Holiday", id);
+        if (successNum == 0)
+            return Results.Ok();
+        else if (successNum == -1)
+            return Results.NotFound(); // cannot delete because does not exist
+        else
+            return Results.BadRequest(); // cannot delete because "in use"
     }
 
     private static DbSet<Holiday> GetContext(TimeEntryContext context)
