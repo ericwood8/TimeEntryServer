@@ -2,14 +2,14 @@
 
 using static Microsoft.AspNetCore.Http.TypedResults;
 
-public class EmployeeApi<T> : BaseApi<T> where T : class
+public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
 {
     public override void Register(WebApplication app)
     {
         BreakIntoStrings(out string singular, out string plural, out string apiSubDir);
 
         // Get all
-        app.MapGet(apiSubDir, GetAll)
+        app.MapGet(apiSubDir, GetAllIncludeDropdowns)
        .WithName($"Get{plural}")
        .WithOpenApi()
        .Produces<IEnumerable<T>>()
@@ -57,22 +57,17 @@ public class EmployeeApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
+    private static async Task<IResult> GetAllIncludeDropdowns([FromServices] TimeEntryContext context)
     {
-        var results = await GetContext(context)
-            .Where(e => e.IsActive) // only fetch active
-            .Include(e => e.Manager)
-            .Include(e => e.Department)
-            .Include(e => e.DepartmentTeam)
-            .OrderBy(e => e.Name)
-            .ToListAsync();
-
-        return Ok(results);
+        EmployeeRepo repo = new(context);
+        var rows = await repo.GetAllIncludeDropdowns();
+        return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        var row = await GetContext(context).FindAsync(id);
+        EmployeeRepo repo = new(context);
+        var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
@@ -81,9 +76,8 @@ public class EmployeeApi<T> : BaseApi<T> where T : class
         if (name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
 
-        var rows = await GetContext(context)
-            .Where(d => d.Name.StartsWith(name) && d.IsActive)
-            .ToListAsync();
+        EmployeeRepo repo = new(context);
+        var rows = await repo.GetByName(name);
         return rows != null ? Results.Ok(rows) : Results.NotFound();
     }
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] Employee newRow)
@@ -91,55 +85,42 @@ public class EmployeeApi<T> : BaseApi<T> where T : class
         newRow.Name = newRow.Name.Trim();
         if (newRow.Name.IsNameBad())
             return Results.BadRequest();  // 400 error if bad characters or empty
-        else if (IsDup(context, newRow.Name))
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 
-        GetContext(context).Add(newRow);
-        await context.SaveChangesAsync();
-        return Results.Created($"/api/employees/{newRow.EmployeeId}", newRow);
+        EmployeeRepo repo = new(context);
+        bool success = await repo.AddAsync(newRow);
+        if (success)
+            return Results.Created($"/api/employees/{newRow.EmployeeId}", newRow);
+        else
+            return Results.UnprocessableEntity(); // 422 error if Duplicate Name        
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Employee updatedRow)
     {
+        if (updatedRow == null)
+            return Results.NotFound();
+
+        updatedRow.Name = updatedRow.Name.Trim();
         if (updatedRow.Name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
-        else if (IsDup(context, updatedRow.Name))
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 
-        var rowToUpdate = await GetContext(context).FindAsync(id);
-        if (rowToUpdate == null) return Results.NotFound();
+        //if (employeeRepo.IsDupOnUpdate(id, updatedRow.Name))
+        //    return Results.UnprocessableEntity(); // 422 error if Duplicate Name 
 
-        rowToUpdate.Name = updatedRow.Name;
-        rowToUpdate.ManagerId = updatedRow.ManagerId;
-        rowToUpdate.DepartmentId = updatedRow.DepartmentId;
-        rowToUpdate.DepartmentTeamId = updatedRow.DepartmentTeamId;
-        rowToUpdate.AvailableLeaveHours = updatedRow.AvailableLeaveHours;
-        rowToUpdate.DonatedHrsReceived = updatedRow.DonatedHrsReceived;
-        rowToUpdate.IsActive = updatedRow.IsActive;
-        rowToUpdate.WhenLeft = updatedRow.WhenLeft;
-
-        await context.SaveChangesAsync();
-        return Results.Ok(rowToUpdate);
+        EmployeeRepo repo = new(context);
+        var postUpdate = await repo.UpdateAsync(id, updatedRow);
+        
+        return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        var rowToDelete = await GetContext(context).FindAsync(id);
-        if (rowToDelete == null) return Results.NotFound();
-
-        GetContext(context).Remove(rowToDelete);
-        await context.SaveChangesAsync();
-        return Results.NoContent();
-    }
-
-    private static DbSet<Employee> GetContext(TimeEntryContext context)
-    {
-        return context.Employee;
-    }
-
-    private static bool IsDup(TimeEntryContext context, string newName)
-    {
-        var unqiueRow = GetContext(context).FirstOrDefault(d => d.Name.Equals(newName.Trim()) && d.IsActive);
-        return (unqiueRow != null);  // already exists 
+        EmployeeRepo repo = new(context);
+        var successNum = await repo.DeleteAsync("Employee", id);
+        if (successNum == 0)
+            return Results.Ok();
+        else if (successNum == -1)
+            return Results.NotFound(); // cannot delete because does not exist
+        else
+            return Results.BadRequest(); // cannot delete because "in use"
     }
 }

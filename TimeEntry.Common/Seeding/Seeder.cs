@@ -1,6 +1,7 @@
 ﻿using EFCore.BulkExtensions;
+using TimeEntry.Common.Context;
 
-namespace TimeEntry.Common.Data.Seeding;
+namespace TimeEntry.Common.Seeding;
 public class Seeder(TimeEntryContext context)
 {
     public void Seed()

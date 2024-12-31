@@ -61,14 +61,14 @@ public class ResponseApi<T> : BaseApi<T> where T : class
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] TimeEntry.Common.Data.Entities.Response newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] Response newRow)
     {
         GetContext(context).Add(newRow);
         await context.SaveChangesAsync();
         return Results.Created($"/api{apiSubDir}/{newRow.ResponseId}", newRow);
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] TimeEntry.Common.Data.Entities.Response updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Response updatedRow)
     {
         var rowToUpdate = await GetContext(context).FindAsync(id);
         if (rowToUpdate == null) return Results.NotFound();

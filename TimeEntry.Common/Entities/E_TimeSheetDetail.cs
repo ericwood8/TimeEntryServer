@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TimeEntry.Common.Data.Entities;
+namespace TimeEntry.Common.Entities;
 
-public class E_TimeSheetDetail
+public class E_TimeSheetDetail : BaseEntity
 {
     #region Omitted
     [Key]
@@ -28,7 +28,7 @@ public class E_TimeSheetDetail
 
     [Display(Name = "Sunday Hours", Description = "Sunday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
-    [Range(0,24)]
+    [Range(0, 24)]
     public required decimal SundayHours { get; set; }
 
     [Required]
@@ -42,7 +42,7 @@ public class E_TimeSheetDetail
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]
     public required decimal TuesdayHours { get; set; }
-     
+
     [Display(Name = "Wednesday Hours", Description = "Wednesday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]

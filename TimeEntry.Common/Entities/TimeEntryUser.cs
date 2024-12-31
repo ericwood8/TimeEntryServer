@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using TimeEntry.Common.Enums;
 
-namespace TimeEntry.Common.Data.Entities;
+namespace TimeEntry.Common.Entities;
 
-public class TimeEntryUser
+public class TimeEntryUser : BaseEntity
 {
     #region Omitted
     [Key]
@@ -57,4 +57,6 @@ public class TimeEntryUser
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
     [DataType(DataType.Date)]
     public DateTime? WhenLeft { get; set; }
+
+    public override string? ToString() => UserName;
 }

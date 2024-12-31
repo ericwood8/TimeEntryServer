@@ -1,6 +1,5 @@
 using TimeEntry.ApiService.Extensions;
-using TimeEntry.Common.Data;
-
+using TimeEntry.Common.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 

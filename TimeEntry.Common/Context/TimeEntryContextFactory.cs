@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Design;
 
-namespace TimeEntry.Common.Data;
+namespace TimeEntry.Common.Context;
 
 public class TimeEntryContextFactory : IDesignTimeDbContextFactory<TimeEntryContext>
 {

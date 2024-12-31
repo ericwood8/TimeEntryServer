@@ -1,6 +1,6 @@
-﻿using TimeEntry.Common.Data.Entities;
+﻿using TimeEntry.Common.Entities;
 
-namespace TimeEntry.Common.Data.Seeding;
+namespace TimeEntry.Common.Seeding;
 
 public static class SeedData
 {

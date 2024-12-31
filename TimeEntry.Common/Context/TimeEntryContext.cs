@@ -1,14 +1,15 @@
-﻿using TimeEntry.Common.Data.Entities;
+﻿using Microsoft.Extensions.Configuration;
+using TimeEntry.Common.Entities;
 using TimeEntry.Common.Models;
 
-namespace TimeEntry.Common.Data
+namespace TimeEntry.Common.Context
 {
-    public class TimeEntryContext : DbContext 
+    public class TimeEntryContext : DbContext
     {
-        readonly Type[] dbEntities = [ typeof(Department), typeof(DepartmentTeam), 
+        readonly Type[] dbEntities = [ typeof(Department), typeof(DepartmentTeam),
             typeof(E_DonateLeave), typeof(E_Request), typeof(E_RequestExpenseDetail),
             typeof(E_TimeSheet), typeof(E_TimeSheetDetail), typeof(Employee), typeof(Holiday),
-            typeof(Project), typeof(ProjectTask), typeof(Response), typeof(RestrictLeave), 
+            typeof(Project), typeof(ProjectTask), typeof(Response), typeof(RestrictLeave),
             typeof(TimeEntryUser)
         ];
 
@@ -34,6 +35,21 @@ namespace TimeEntry.Common.Data
         public DbSet<RestrictLeave> RestrictLeave => Set<RestrictLeave>();
         public DbSet<TimeEntryUser> TimeEntryUser => Set<TimeEntryUser>();
 
+
+        /// <summary> Required to handle applying Configuration where missing </summary>
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                   .SetBasePath(Directory.GetCurrentDirectory())
+                   .AddJsonFile("appsettings.json")
+                   .Build();
+                var connectionString = configuration.GetConnectionString("DbConnectionString");
+                optionsBuilder.UseSqlServer(connectionString);
+            }
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -47,6 +63,10 @@ namespace TimeEntry.Common.Data
         }
 
         #region Stored Procedures
+        /// <summary> Returns all the places that row is used in other tables. </summary>
+        /// <param name="deleteFromTable">The table name</param>
+        /// <param name="deleteId"> Id </param>
+        /// <returns> List of rows in other tables that depend on this row. </returns>
         public async Task<List<DeleteTableResult>> SpCanDeleteAsync(string deleteFromTable, int deleteId)
         {
             var results = await Set<DeleteTableResult>()

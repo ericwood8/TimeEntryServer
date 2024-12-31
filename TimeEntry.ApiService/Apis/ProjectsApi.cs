@@ -1,14 +1,15 @@
 ﻿namespace TimeEntry.ApiService.Apis;
+
 using static Microsoft.AspNetCore.Http.TypedResults;
 
-public class ProjectsApi<T> : BaseApi<T> where T : class
+public class ProjectsApi<T> : BaseApi<T> where T : BaseNameActiveEntity
 {
     public override void Register(WebApplication app)
     {
         BreakIntoStrings(out string singular, out string plural, out string apiSubDir);
 
         // Get all 
-        app.MapGet(apiSubDir, GetAll)
+        app.MapGet(apiSubDir, GetAllIncludeTasks)
           .WithName($"Get{plural}")
           .WithOpenApi()
           .Produces<IEnumerable<T>>()
@@ -56,20 +57,17 @@ public class ProjectsApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAll([FromServices]TimeEntryContext context)
+    private static async Task<IResult> GetAllIncludeTasks([FromServices]TimeEntryContext context)
     {
-        var results = await GetContext(context)
-            .Where(t => t.IsActive) // only fetch active
-           .Include(p => p.Tasks)
-          .OrderBy(c => c.Name)
-          .ToListAsync();
-
-        return Ok(results);
+        ProjectRepo repo = new(context);
+        var rows = await repo.GetAllIncludeTasks();
+        return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        var row = await GetContext(context).FindAsync(id);
+        ProjectRepo repo = new(context);
+        var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
@@ -78,9 +76,8 @@ public class ProjectsApi<T> : BaseApi<T> where T : class
         if (name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
 
-        var rows = await GetContext(context)
-            .Where(d => d.Name.StartsWith(name) && d.IsActive)
-            .ToListAsync();
+        ProjectRepo repo = new(context);
+        var rows = await repo.GetByName(name);
         return rows != null ? Results.Ok(rows) : Results.NotFound();
     }
 
@@ -90,58 +87,46 @@ public class ProjectsApi<T> : BaseApi<T> where T : class
 
         if (newRow.Name.IsNameBad())
             return Results.BadRequest();  // 400 error if bad characters or empty
-        else if (IsDup(context, newRow.Name))  
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 
-        GetContext(context).Add(newRow);
-        await context.SaveChangesAsync();
-        return Results.Created($"/api/projects/{newRow.ProjectId}", newRow);
+        ProjectRepo repo = new(context);
+        bool success = await repo.AddAsync(newRow);
+        if (success)
+            return Results.Created($"/api/projects/{newRow.ProjectId}", newRow);
+        else
+            return Results.UnprocessableEntity(); // 422 error if Duplicate Name       
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Project updatedRow)
     {
+        if (updatedRow == null)
+            return Results.NotFound();
+
+        updatedRow.Name = updatedRow.Name.Trim();
         if (updatedRow.Name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
-        else if (IsDup(context, updatedRow.Name))
+
+        //if (projectRepo.IsDupOnUpdate(id, updatedRow.Name))
+        //     
+
+        ProjectRepo repo = new(context);
+        var postUpdate = await repo.UpdateAsync(id, updatedRow);
+
+        if (postUpdate == default(T))
+        {
             return Results.UnprocessableEntity(); // 422 error if Duplicate Name
-
-        var rowToUpdate = await GetContext(context).Include(c => c.Tasks).FirstOrDefaultAsync(c => c.ProjectId == id);
-        if (rowToUpdate == null) return Results.NotFound();
-
-        rowToUpdate.Name = updatedRow.Name;
-        rowToUpdate.IsDefault = updatedRow.IsDefault;
-        rowToUpdate.IsActive = updatedRow.IsActive;
-
-        var tasksToDelete = rowToUpdate.Tasks?.Where(t => !updatedRow.Tasks!.Any(s => s.Name == t.Name));
-        if(tasksToDelete!.Any()) context.ProjectTask.RemoveRange(tasksToDelete!);
-
-        rowToUpdate.Tasks = updatedRow.Tasks;
-
-        await context.SaveChangesAsync();
-        return Results.Ok(rowToUpdate);
+        }
+        return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        var rowToDelete = await GetContext(context).FindAsync(id);
-        if (rowToDelete == null) return Results.NotFound();
-
-        var canDelete = await context.SpCanDeleteAsync("Project", id);
-        if (canDelete.Any()) return Results.BadRequest();
-
-        context.Project.Remove(rowToDelete);
-        await context.SaveChangesAsync();
-        return Results.NoContent();
-    }
-
-    private static DbSet<Project> GetContext(TimeEntryContext context)
-    {
-        return context.Project;
-    }
-
-    private static bool IsDup(TimeEntryContext context, string newName)
-    {
-        var unqiueRow = GetContext(context).FirstOrDefault(d => d.Name.Equals(newName.Trim()) && d.IsActive);
-        return (unqiueRow != null);  // already exists 
+        ProjectRepo repo = new(context);
+        var successNum = await repo.DeleteAsync("Project", id);
+        if (successNum == 0)
+            return Results.Ok();
+        else if (successNum == -1)
+            return Results.NotFound(); // cannot delete because does not exist
+        else
+            return Results.BadRequest(); // cannot delete because "in use"
     }
 }

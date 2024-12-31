@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TimeEntry.Common.Data.Entities;
+namespace TimeEntry.Common.Entities;
 
-public class ProjectTask
+public class ProjectTask : BaseNameActiveEntity
 {
     #region Omitted
     [Key]
@@ -17,14 +17,6 @@ public class ProjectTask
     public DateTime? Inactivated { get; set; }
     #endregion Omitted 
 
-    [Display(Name = "Name", Description = "Name")]
-    [StringLength(50)]
-    [RegularExpression("([a-zA-Z]+)", ErrorMessage = "Enter only alphabetical letters for Name")]
-    public required string Name { get; set; }
-
     [Display(Name = "Default", Description = "Default")]
     public required bool IsDefault { get; set; } = false;
-
-    [Display(Name = "Active", Description = "Active")]
-    public required bool IsActive { get; set; } = true;
 }

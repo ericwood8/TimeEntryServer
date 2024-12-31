@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TimeEntry.Common.Data.Entities;
+namespace TimeEntry.Common.Entities;
 
-public class E_DonateLeave
+public class E_DonateLeave : BaseEntity
 {
     #region Omitted
     [Key]

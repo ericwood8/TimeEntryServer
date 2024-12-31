@@ -1,6 +1,6 @@
-﻿namespace TimeEntry.Common.Data.Entities;
+﻿namespace TimeEntry.Common.Entities;
 
-public class E_RequestExpenseDetail
+public class E_RequestExpenseDetail : BaseEntity
 {
     #region Omitted
     [Key]

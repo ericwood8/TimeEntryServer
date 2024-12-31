@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Reflection.Metadata;
 
-namespace TimeEntry.Common.Data.Entities;
+namespace TimeEntry.Common.Entities;
 
-public class E_TimeSheet
+public class E_TimeSheet : BaseEntity
 {
     #region Omitted
     [Key]

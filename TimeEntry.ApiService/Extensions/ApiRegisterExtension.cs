@@ -1,4 +1,4 @@
-﻿using TimeEntry.Common.Data.Entities;
+﻿using TimeEntry.Common.Entities;
 
 namespace TimeEntry.ApiService.Extensions
 {

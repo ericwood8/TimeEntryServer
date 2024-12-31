@@ -1,6 +1,6 @@
-﻿namespace TimeEntry.Common.Data.Entities;
+﻿namespace TimeEntry.Common.Entities;
 
-public class Department
+public class Department : BaseNameActiveEntity
 {
     #region Omitted
     [Key]
@@ -14,14 +14,6 @@ public class Department
     // list of details
     public List<DepartmentTeam>? Teams { get; set; }
 
-    [Display(Name = "Name", Description = "Name")]
-    [StringLength(50)]
-    [RegularExpression("([a-zA-Z]+)", ErrorMessage = "Enter only alphabetical letters for Name")]
-    public required string Name { get; set; }
-
     [Display(Name = "Default", Description = "Default")]
     public required bool IsDefault { get; set; } = false;
-
-    [Display(Name = "Active", Description = "Active")]
-    public required bool IsActive { get; set; } = true;
 }

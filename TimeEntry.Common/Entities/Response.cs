@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using TimeEntry.Common.Enums;
 
-namespace TimeEntry.Common.Data.Entities;
+namespace TimeEntry.Common.Entities;
 
-public class Response
+public class Response : BaseEntity
 {
     #region Omitted
     [Key]

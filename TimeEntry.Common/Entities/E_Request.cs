@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using TimeEntry.Common.Enums;
 
-namespace TimeEntry.Common.Data.Entities;
+namespace TimeEntry.Common.Entities;
 
-public class E_Request
+public class E_Request : BaseEntity
 {
     #region Omitted
     [Key]
@@ -31,7 +31,7 @@ public class E_Request
     #endregion Omitted
 
     // Entities
-    public Employee Employee { get; set; }
+    public Employee? Employee { get; set; }
 
     // Enums
     //public SY_RequestStatusType SY_RequestStatusType { get; set; }

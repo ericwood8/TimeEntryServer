@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TimeEntry.Common.Data.Entities;
+namespace TimeEntry.Common.Entities;
 
-public class RestrictLeave
+public class RestrictLeave : BaseEntity
 {
     #region Omitted
     [Key]
@@ -31,7 +31,7 @@ public class RestrictLeave
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
     [DataType(DataType.Date)]
     public required DateTime FromDateTime { get; set; }
-     
+
     [Display(Name = "To Date Time", Description = "To Date Time")]
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
     [DataType(DataType.Date)]
@@ -40,4 +40,6 @@ public class RestrictLeave
     [Display(Name = "Reason", Description = "Reason")]
     [StringLength(50)]
     public string? Reason { get; set; }
+
+    public override string? ToString() => Reason;
 }
