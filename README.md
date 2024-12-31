@@ -4,8 +4,8 @@ This is the API layer for the TimeEntryUI and TimeEntryDB repos.
 # VERSION 
 **Version 1.0**  = Initial check-in. Shows CRUD (Create, Read, Update, Delete) functionality and Master\Detail screens.
 
-**Version 1.01** = 12/30/2024 = Threatened with the "Separation of Concerns Authority", everything was switched to repositories and
-   where APIs do not know anything about DbContext. Most of this revision is complete.
+**Version 1.01** = 12/31/2024 = Threatened with the "Separation of Concerns Authority" :-), everything was switched to repositories and
+   where APIs do not know anything about DbContext. 
 
 # Time Entry
 The TimeEntry is a .NET Aspire designed to streamline workforce management.
