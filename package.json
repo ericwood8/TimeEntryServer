@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@opentelemetry/auto-instrumentations-web": "^0.45.0",
+    "@opentelemetry/context-zone": "^1.30.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.57.0",
+    "@opentelemetry/instrumentation": "^0.57.0",
+    "@opentelemetry/sdk-trace-web": "^1.30.0"
+  }
+}
