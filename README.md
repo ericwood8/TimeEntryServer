@@ -1,5 +1,5 @@
 # Time Entry
-This is the API layer for the ![TimeEntryUI](https://github.com/ericwood8/TimeEntryUI) and ![TimeEntryDB](https://github.com/ericwood8/TimeEntryDB) repos. 
+This is the API layer for the [TimeEntryUI](https://github.com/ericwood8/TimeEntryUI) and [TimeEntryDB](https://github.com/ericwood8/TimeEntryDB) repos. 
 
 # VERSION 
 **Version 1.0**  = Initial check-in. Shows CRUD (Create, Read, Update, Delete) functionality and Master\Detail screens.
