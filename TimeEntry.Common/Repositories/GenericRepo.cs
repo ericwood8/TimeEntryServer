@@ -25,7 +25,8 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
 
     public async Task<T> GetByIdAsync(int id)
     {
-        return await _dbSet.FindAsync(id);
+        var entity = await _dbSet.FindAsync(id);
+        return entity == null ? throw new InvalidOperationException($"Entity with id {id} not found.") : entity;
     }
 
     public T Get(Expression<Func<T, bool>> predicate)
