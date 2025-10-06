@@ -129,7 +129,11 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         //if (departmentRepo.IsDupOnUpdate(id, updatedRow.Name))
         //   return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 
-        List<DepartmentTeam> preUpdateTeams = (updatedRow.Teams.IsNullOrEmpty()) ? [] : new(updatedRow.Teams);
+        List<DepartmentTeam> preUpdateTeams = [];
+        if (updatedRow.Teams != null && updatedRow.Teams.Count > 0)
+        {
+            preUpdateTeams = updatedRow.Teams;
+        }        
 
         DepartmentRepo repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);

@@ -26,7 +26,10 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
 
     public async Task<T> GetByIdAsync(int id)
     {
-        return await _dbSet.FindAsync(id);
+        var entity = await _dbSet.FindAsync(id);
+        if (entity == null)
+            throw new InvalidOperationException($"Entity of type {typeof(T).Name} with id {id} not found.");
+        return entity;
     }
 
     public T Get(Expression<Func<T, bool>> predicate)
