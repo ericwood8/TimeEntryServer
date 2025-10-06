@@ -7,6 +7,8 @@ This is the API layer for the [TimeEntryUI](https://github.com/ericwood8/TimeEnt
 **Version 1.01** = 12/31/2024 = Threatened with the "Separation of Concerns Authority" :-), everything was switched to repositories and
    where APIs do not know anything about DbContext. 
 
+   10/6/2025 = Fixed nullability and upgraded the NuGet packages.
+
 # Time Entry
 The TimeEntry is a .NET Aspire designed to streamline workforce management.
 Its purpose is for employees to be able to:
