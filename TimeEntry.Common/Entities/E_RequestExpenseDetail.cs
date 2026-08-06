@@ -1,4 +1,6 @@
-﻿namespace TimeEntry.Common.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TimeEntry.Common.Entities;
 
 public class E_RequestExpenseDetail : BaseEntity
 {
@@ -24,6 +26,7 @@ public class E_RequestExpenseDetail : BaseEntity
     [Display(Name = "Reimbursable Amount", Description = "Reimbursable Amount")]
     [DisplayFormat(ApplyFormatInEditMode = true)]
     [DataType(DataType.Currency)]
+    [Column(TypeName = "money")]
     public required decimal ReimbursableAmount { get; set; }
 
     [Display(Name = "Receipt Provided", Description = "Receipt Provided")]

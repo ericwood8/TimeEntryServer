@@ -29,38 +29,45 @@ public class E_TimeSheetDetail : BaseEntity
     [Display(Name = "Sunday Hours", Description = "Sunday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]
+    [Precision(4, 2)]
     public required decimal SundayHours { get; set; }
 
     [Required]
     [Display(Name = "Monday Hours", Description = "Monday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]
+    [Precision(4, 2)]
     public required decimal MondayHours { get; set; }
 
     [Required]
     [Display(Name = "Tuesday Hours", Description = "Tuesday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]
+    [Precision(4, 2)]
     public required decimal TuesdayHours { get; set; }
 
     [Display(Name = "Wednesday Hours", Description = "Wednesday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]
+    [Precision(4, 2)]
     public required decimal WednesdayHours { get; set; }
 
     [Display(Name = "Thursday Hours", Description = "Thursday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]
+    [Precision(4, 2)]
     public required decimal ThursdayHours { get; set; }
 
     [Display(Name = "Friday Hours", Description = "Friday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]
+    [Precision(4, 2)]
     public required decimal FridayHours { get; set; }
 
     [Display(Name = "Saturday Hours", Description = "Saturday Hours")]
     [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "#0.00")]
     [Range(0, 24)]
+    [Precision(4, 2)]
     public required decimal SaturdayHours { get; set; }
 
     [Display(Order = -1, Name = "Notes", Description = "Notes")]
