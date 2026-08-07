@@ -8,7 +8,6 @@ This is the API layer for the [TimeEntryUI](https://github.com/ericwood8/TimeEnt
    where APIs do not know anything about DbContext. 
 
    10/6/2025 = Fixed nullability and upgraded the NuGet packages.
-
     8/6/2026 - Fixed warnings and added Playwright stub for just playing around.
     8/6/2026 - Verified that it compiles with Visual Studio 2026 Community edition v18.8.2 .    
 
