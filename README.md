@@ -9,6 +9,9 @@ This is the API layer for the [TimeEntryUI](https://github.com/ericwood8/TimeEnt
 
    10/6/2025 = Fixed nullability and upgraded the NuGet packages.
 
+    8/6/2026 - Fixed warnings and added Playwright stub for just playing around.
+    8/6/2026 - Verified that it compiles with Visual Studio 2026 Community edition v18.8.2 .    
+
 # Time Entry
 The TimeEntry is a .NET Aspire designed to streamline workforce management.
 Its purpose is for employees to be able to:
