@@ -9,7 +9,7 @@ public class TimeEntryContextFactory : IDesignTimeDbContextFactory<TimeEntryCont
         var optionsBuilder = new DbContextOptionsBuilder<TimeEntryContext>();
 
         // Hard coding dev server since this is only used to create migrations
-        optionsBuilder.UseSqlServer(@"Server=WIN-4PF20KOTHOG;Database=TimeEntry;Trusted_Connection=True;");
+        optionsBuilder.UseSqlServer(@"Server=ERICMINIPC;Database=TimeEntry;Trusted_Connection=True;");
 
         return new TimeEntryContext(optionsBuilder.Options);
     }
