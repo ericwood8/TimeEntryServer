@@ -4,6 +4,13 @@ public abstract class BaseApi<T> : IApi where T : class
 {
     protected static readonly string? _apiSubDir;  // example value is "/departments" when class is Department
 
+    static BaseApi()
+    {
+        // Handlers are static, so they cannot see the value Register() works out; make it available to them too.
+        BreakIntoStrings(out _, out _, out string apiSubDir);
+        _apiSubDir = apiSubDir;
+    }
+
     public abstract void Register(WebApplication app);
 
     /// <summary>

@@ -21,6 +21,7 @@ public class HolidayApi<T> : BaseApi<T> where T : class
         .WithName($"Get{singular}ById")
         .WithOpenApi()
         .Produces<T>()
+        .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Create new 
@@ -87,20 +88,22 @@ public class HolidayApi<T> : BaseApi<T> where T : class
         // SPECIAL - duplicate names is fine on holidays
 
         HolidayRepo repo = new(context);
-        bool success = await repo.AddAsync(newRow);
-        if (success)
-            return Results.Created($"/api/holidays/{newRow.HolidayId}", newRow);
-        else
-            return Results.NoContent();        
+        await repo.AddAsync(newRow);
+        return Results.Created($"/api/holidays/{newRow.HolidayId}", newRow);
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Holiday updatedRow)
     {
+        if (updatedRow.HolidayId != id)
+            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+
         if (updatedRow.Name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
         // SPECIAL - duplicate names is fine on holidays
 
         HolidayRepo repo = new(context);
+        if (!await repo.ExistsAsync(id))
+            return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }

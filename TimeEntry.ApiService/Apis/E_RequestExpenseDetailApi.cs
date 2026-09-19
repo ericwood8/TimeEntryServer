@@ -24,6 +24,7 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
         .WithName($"Get{singular}ById")
         .WithOpenApi()
         .Produces<T>()
+        .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Create new 
@@ -37,6 +38,7 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
         app.MapPut(apiSubDir + "/{id:int}", UpdateRow)
         .WithName($"Update{singular}")
         .WithOpenApi()
+        .ProducesProblem(400)
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -65,16 +67,18 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_RequestExpenseDetail newRow)
     {
         GenericRepo<E_RequestExpenseDetail> repo = new(context);
-        bool success = await repo.AddAsync(newRow);
-        if (success)
-            return Results.Created($"/api/expenseDetails/{newRow.RequestExpenseDetailId}", newRow);
-        else
-            return Results.NoContent();        
+        await repo.AddAsync(newRow);
+        return Results.Created($"/api/expenseDetails/{newRow.RequestExpenseDetailId}", newRow);
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] E_RequestExpenseDetail updatedRow)
     {
+        if (updatedRow.RequestExpenseDetailId != id)
+            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+
         GenericRepo<E_RequestExpenseDetail> repo = new(context);
+        if (!await repo.ExistsAsync(id))
+            return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }

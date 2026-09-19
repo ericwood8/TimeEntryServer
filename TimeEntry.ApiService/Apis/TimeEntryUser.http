@@ -1,1 +1,5 @@
 # For more info on HTTP files go to https://aka.ms/vs/httpfile
+
+@projectUrl=http://localhost:8080
+
+GET {{projectUrl}}/api/timeentryusers

@@ -21,6 +21,7 @@ public class ProjectsApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         .WithName($"Get{singular}ById")
         .WithOpenApi()
         .Produces<T>()
+        .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Create new
@@ -100,6 +101,8 @@ public class ProjectsApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     {
         if (updatedRow == null)
             return Results.NotFound();
+        if (updatedRow.ProjectId != id)
+            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
         updatedRow.Name = updatedRow.Name.Trim();
         if (updatedRow.Name.IsNameBad())
@@ -109,6 +112,8 @@ public class ProjectsApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         //     
 
         ProjectRepo repo = new(context);
+        if (!await repo.ExistsAsync(id))
+            return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
 
         if (postUpdate == default(T))

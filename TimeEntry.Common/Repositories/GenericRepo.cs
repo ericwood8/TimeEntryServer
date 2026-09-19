@@ -23,10 +23,17 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
         return _dbSet.Find(id)!;
     }
 
-    public async Task<T> GetByIdAsync(int id)
+    /// <summary> Returns the row, or null when there is no row with that id. </summary>
+    public async Task<T?> GetByIdAsync(int id)
     {
-        var entity = await _dbSet.FindAsync(id);
-        return entity ?? throw new InvalidOperationException($"Entity with id {id} not found.");
+        return await _dbSet.FindAsync(id);
+    }
+
+    /// <summary> True when a row with that id exists. Does not track the row, so a caller can still attach its own copy afterwards. </summary>
+    public async Task<bool> ExistsAsync(int id)
+    {
+        string keyName = _context.Model.FindEntityType(typeof(T))!.FindPrimaryKey()!.Properties[0].Name;
+        return await _dbSet.AsNoTracking().AnyAsync(e => EF.Property<int>(e, keyName) == id);
     }
 
     public T Get(Expression<Func<T, bool>> predicate)
@@ -92,7 +99,7 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
 
         _context.Entry(rowToUpdate).State = EntityState.Modified;
         await _context.SaveChangesAsync();
-        return await GetByIdAsync(id); // refetch changed row
+        return await GetByIdAsync(id) ?? throw new InvalidOperationException($"Entity with id {id} not found."); // refetch changed row
     }
 
     // ------- Delete -------------------

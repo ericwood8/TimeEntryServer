@@ -4,8 +4,6 @@ using static Microsoft.AspNetCore.Http.TypedResults;
 
 public class TimeEntryUserApi<T> : BaseApi<T> where T : class
 {
-    private const string apiSubDir = "/users";
-
     public override void Register(WebApplication app)
     {
         BreakIntoStrings(out string singular, out string plural, out string apiSubDir);
@@ -23,6 +21,7 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         .WithName($"Get{singular}ById")
         .WithOpenApi()
         .Produces<T>()
+        .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Create new 
@@ -91,17 +90,22 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         TimeEntryUserRepo repo = new(context);
         bool success = await repo.AddAsync(newRow);
         if (success)
-            return Results.Created($"/api{apiSubDir}/{newRow.TimeEntryUserId}", newRow);
+            return Results.Created($"/api{_apiSubDir}/{newRow.TimeEntryUserId}", newRow);
         else
             return Results.UnprocessableEntity(); // 422 error if Duplicate Name
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] TimeEntryUser updatedRow)
     {
+        if (updatedRow.TimeEntryUserId != id)
+            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+
         if (updatedRow.Name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
 
         TimeEntryUserRepo repo = new(context);
+        if (!await repo.ExistsAsync(id))
+            return Results.NotFound(); // 404 error if there is no row with that id
         //if (repo.IsDupOnCreate(updatedRow.Name))
         //    return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 

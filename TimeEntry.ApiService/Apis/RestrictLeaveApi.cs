@@ -4,8 +4,6 @@ using static Microsoft.AspNetCore.Http.TypedResults;
 
 public class RestrictLeaveApi<T> : BaseApi<T> where T : class
 {
-    private const string apiSubDir = "/restricts";
-
     public override void Register(WebApplication app)
     {
         BreakIntoStrings(out string singular, out string plural, out string apiSubDir);
@@ -23,6 +21,7 @@ public class RestrictLeaveApi<T> : BaseApi<T> where T : class
         .WithName($"Get{singular}ById")
         .WithOpenApi()
         .Produces<T>()
+        .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Create new 
@@ -35,6 +34,7 @@ public class RestrictLeaveApi<T> : BaseApi<T> where T : class
         app.MapPut(apiSubDir + "/{id:int}", UpdateRow)
         .WithName($"Update{singular}")
         .WithOpenApi()
+        .ProducesProblem(400)
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -63,16 +63,18 @@ public class RestrictLeaveApi<T> : BaseApi<T> where T : class
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] RestrictLeave newRow)
     {
         GenericRepo<RestrictLeave> repo = new(context);
-        bool success = await repo.AddAsync(newRow);
-        if (success)
-            return Results.Created($"/api{apiSubDir}/{newRow.RestrictLeaveId}", newRow);
-        else
-            return Results.NoContent();        
+        await repo.AddAsync(newRow);
+        return Results.Created($"/api{_apiSubDir}/{newRow.RestrictLeaveId}", newRow);
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] RestrictLeave updatedRow)
     {
+        if (updatedRow.RestrictLeaveId != id)
+            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+
         GenericRepo<RestrictLeave> repo = new(context);
+        if (!await repo.ExistsAsync(id))
+            return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }

@@ -120,6 +120,8 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     {
         if (updatedRow == null) 
             return Results.NotFound();
+        if (updatedRow.DepartmentId != id)
+            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
         updatedRow.Name = updatedRow.Name.Trim();
 
@@ -136,6 +138,8 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         }        
 
         DepartmentRepo repo = new(context);
+        if (!await repo.ExistsAsync(id))
+            return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
 
         // ----- now fix the team(s) associated with the department ----

@@ -6,7 +6,8 @@ public interface INameActiveRepo<T> where T : BaseNameActiveEntity
 {
     //--------- GET ROW -----------------
     public T GetById(int id);
-    public Task<T> GetByIdAsync(int id);
+    public Task<T?> GetByIdAsync(int id);
+    public Task<bool> ExistsAsync(int id);
     public T Get(Expression<Func<T, bool>> predicate);
     public Task<T?> GetAsync(Expression<Func<T, bool>> predicate);
 

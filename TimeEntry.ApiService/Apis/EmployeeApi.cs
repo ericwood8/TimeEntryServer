@@ -21,6 +21,7 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         .WithName($"Get{singular}ById")
         .WithOpenApi()
         .Produces<T>()
+        .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Create new 
@@ -98,6 +99,8 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     {
         if (updatedRow == null)
             return Results.NotFound();
+        if (updatedRow.EmployeeId != id)
+            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
         updatedRow.Name = updatedRow.Name.Trim();
         if (updatedRow.Name.IsNameBad())
@@ -107,6 +110,8 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         //    return Results.UnprocessableEntity(); // 422 error if Duplicate Name 
 
         EmployeeRepo repo = new(context);
+        if (!await repo.ExistsAsync(id))
+            return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         
         return Results.Ok(postUpdate);

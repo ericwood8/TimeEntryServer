@@ -62,16 +62,18 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_TimeSheetDetail newRow)
     {
         GenericRepo<E_TimeSheetDetail> repo = new(context);
-        bool success = await repo.AddAsync(newRow);
-        if (success)
-            return Results.Created($"/api/timesheetDetails/{newRow.TimeSheetDetailId}", newRow);
-        else
-            return Results.NoContent();        
+        await repo.AddAsync(newRow);
+        return Results.Created($"/api/timesheetDetails/{newRow.TimeSheetDetailId}", newRow);
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] E_TimeSheetDetail updatedRow)
     {
+        if (updatedRow.TimeSheetDetailId != id)
+            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+
         GenericRepo<E_TimeSheetDetail> repo = new(context);
+        if (!await repo.ExistsAsync(id))
+            return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }
