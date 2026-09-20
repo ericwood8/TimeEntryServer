@@ -51,14 +51,14 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        GenericRepo<E_Request> repo = new(context);
+        E_RequestRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.WhenRequested);
         return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_Request> repo = new(context);
+        E_RequestRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
@@ -92,7 +92,7 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
             newRow.WhenRequested = DateTime.Now;
         }
 
-        GenericRepo<E_Request> repo = new(context);
+        E_RequestRepo repo = new(context);
         await repo.AddAsync(newRow);
         return Results.Created($"/api{_apiSubDir}/{newRow.RequestId}", newRow);
     }
@@ -107,7 +107,7 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         //    rowToUpdate.StatusDate = DateTime.Now;
         //}
 
-        GenericRepo<E_Request> repo = new(context);
+        E_RequestRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
@@ -116,7 +116,7 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_Request> repo = new(context);
+        E_RequestRepo repo = new(context);
         var successNum = await repo.DeleteAsync("E_Request", id);
         if (successNum == 0)
             return Results.Ok();

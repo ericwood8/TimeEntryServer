@@ -48,21 +48,21 @@ public class RestrictLeaveApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        GenericRepo<RestrictLeave> repo = new(context);
+        RestrictLeaveRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.ToDateTime);
         return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<RestrictLeave> repo = new(context);
+        RestrictLeaveRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] RestrictLeave newRow)
     {
-        GenericRepo<RestrictLeave> repo = new(context);
+        RestrictLeaveRepo repo = new(context);
         await repo.AddAsync(newRow);
         return Results.Created($"/api{_apiSubDir}/{newRow.RestrictLeaveId}", newRow);
     }
@@ -72,7 +72,7 @@ public class RestrictLeaveApi<T> : BaseApi<T> where T : class
         if (updatedRow.RestrictLeaveId != id)
             return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
-        GenericRepo<RestrictLeave> repo = new(context);
+        RestrictLeaveRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
@@ -81,7 +81,7 @@ public class RestrictLeaveApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<RestrictLeave> repo = new(context);
+        RestrictLeaveRepo repo = new(context);
         var successNum = await repo.DeleteAsync("RestrictLeave", id);
         if (successNum == 0)
             return Results.Ok();

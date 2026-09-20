@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TimeEntry.Common.Entities;
 
@@ -9,6 +9,7 @@ public class E_RequestExpenseDetail : BaseEntity
     [Display(Order = -1, AutoGenerateField = true)]
     public required int RequestExpenseDetailId { get; set; }
 
+    [ForeignKey(nameof(E_RequestExpenseSheet))]
     [Display(Order = -1, AutoGenerateField = false)]
     public required int E_RequestExpenseSheetId { get; set; }
 
@@ -16,7 +17,8 @@ public class E_RequestExpenseDetail : BaseEntity
     public required int ExpenseTypeId { get; set; }
     #endregion Omitted
 
-    public required E_RequestExpenseSheet E_RequestExpenseSheet { get; set; }
+    // entities
+    public E_RequestExpenseSheet? E_RequestExpenseSheet { get; set; }
 
     [Display(Name = "Expense Date", Description = "Expense Date")]
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
@@ -30,9 +32,9 @@ public class E_RequestExpenseDetail : BaseEntity
     public required decimal ReimbursableAmount { get; set; }
 
     [Display(Name = "Receipt Provided", Description = "Receipt Provided")]
-    public required bool ReceiptProvided { get; set; }
+    public required bool ReceiptProvided { get; set; } = true;
 
-    [Display(Name = "Attached Receipt File Path", Description = "Attached Receipt File Path")]
+    [Display(Order = -1, Name = "Attached Receipt File Path", Description = "Attached Receipt File Path")]
     [StringLength(200)]
     [DataType(DataType.MultilineText)]
     public string? AttachedReceiptFilePath { get; set; }
@@ -44,7 +46,7 @@ public class E_RequestExpenseDetail : BaseEntity
     [Display(Order = -1, Name = "Notes", Description = "Notes")]
     [StringLength(200)]
     [DataType(DataType.MultilineText)]
-    public string? Notes { get; set; } = "";
+    public string? Notes { get; set; }
 
     [Display(Name = "Lodging Nights", Description = "Lodging Nights")]
     public int? LodgingNights { get; set; }
@@ -52,7 +54,7 @@ public class E_RequestExpenseDetail : BaseEntity
     [Display(Name = "Miles For Per Diem", Description = "Miles For Per Diem")]
     public int? MilesForPerDiem { get; set; }
 
-    [Display(Name = "Excuse For No Receipt", Description = "Excuse For No Receipt")]
+    [Display(Order = -1, Name = "Excuse For No Receipt", Description = "Excuse For No Receipt")]
     [StringLength(200)]
     [DataType(DataType.MultilineText)]
     public string? ExcuseForNoReceipt { get; set; }

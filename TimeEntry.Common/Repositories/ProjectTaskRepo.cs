@@ -1,4 +1,4 @@
-﻿namespace TimeEntry.Common.Repositories;
+namespace TimeEntry.Common.Repositories;
 
 public class ProjectTaskRepo : NameActiveRepo<ProjectTask>
 {

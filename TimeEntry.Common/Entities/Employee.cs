@@ -1,4 +1,6 @@
-﻿namespace TimeEntry.Common.Entities;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TimeEntry.Common.Entities;
 
 public class Employee : BaseNameActiveEntity
 {
@@ -7,12 +9,15 @@ public class Employee : BaseNameActiveEntity
     [Display(Order = -1, AutoGenerateField = true)]
     public required int EmployeeId { get; set; }
 
+    [ForeignKey(nameof(Manager))]
     [Display(Order = -1, AutoGenerateField = false)]
     public int? ManagerId { get; set; }
 
+    [ForeignKey(nameof(Department))]
     [Display(Order = -1, AutoGenerateField = false)]
     public required int DepartmentId { get; set; }
 
+    [ForeignKey(nameof(DepartmentTeam))]
     [Display(Order = -1, AutoGenerateField = false)]
     public required int DepartmentTeamId { get; set; }
     #endregion Omitted
@@ -22,7 +27,7 @@ public class Employee : BaseNameActiveEntity
     public Department? Department { get; set; }
     public DepartmentTeam? DepartmentTeam { get; set; }
 
-    [Display(Name = "Leave Hours", Description = "Leave Hours")]
+    [Display(Name = "Available Leave Hours", Description = "Available Leave Hours")]
     public required int AvailableLeaveHours { get; set; }
 
     [Display(Name = "Donated Hrs Received", Description = "Donated Hrs Received")]
@@ -32,6 +37,4 @@ public class Employee : BaseNameActiveEntity
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]
     [DataType(DataType.Date)]
     public DateTime? WhenLeft { get; set; }
-
-    public override string? ToString() => Name;
 }

@@ -1,4 +1,4 @@
-﻿namespace TimeEntry.ApiService.Apis;
+namespace TimeEntry.ApiService.Apis;
 
 using static Microsoft.AspNetCore.Http.TypedResults;
 
@@ -24,13 +24,13 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         .ProducesProblem(404)
         .ProducesProblem(500);
 
-        // Create new 
+        // Create new
         app.MapPost(_apiSubDir, CreateRow)
         .WithName($"Create{singular}")
         .WithOpenApi()
         .ProducesProblem(500);
 
-        // Update existing 
+        // Update existing
         app.MapPut(_apiSubDir + "/{id:int}", UpdateRow)
         .WithName($"Update{singular}")
         .WithOpenApi()
@@ -38,7 +38,7 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         .ProducesProblem(404)
         .ProducesProblem(500);
 
-        // Delete 
+        // Delete
         app.MapDelete(_apiSubDir + "/{id:int}", DeleteRow)
         .WithName($"Delete{singular}")
         .WithOpenApi()
@@ -48,21 +48,21 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        GenericRepo<E_DonateLeave> repo = new(context);
+        E_DonateLeaveRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.WhenDonated);
         return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_DonateLeave> repo = new(context);
+        E_DonateLeaveRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_DonateLeave newRow)
     {
-        GenericRepo<E_DonateLeave> repo = new(context); 
+        E_DonateLeaveRepo repo = new(context);
         await repo.AddAsync(newRow);
         return Results.Created($"/api{_apiSubDir}/{newRow.DonateLeaveId}", newRow);
     }
@@ -72,16 +72,16 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         if (updatedRow.DonateLeaveId != id)
             return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
-        GenericRepo<E_DonateLeave> repo = new(context);
+        E_DonateLeaveRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
-        var postUpdate = await repo.UpdateAsync(id, updatedRow);         
+        var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_DonateLeave> repo = new(context);
+        E_DonateLeaveRepo repo = new(context);
         var successNum = await repo.DeleteAsync("E_DonateLeave", id);
         if (successNum == 0)
             return Results.Ok();

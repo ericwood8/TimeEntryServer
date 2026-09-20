@@ -1,4 +1,4 @@
-﻿namespace TimeEntry.Common.Entities;
+namespace TimeEntry.Common.Entities;
 
 public class Holiday : BaseEntity
 {
@@ -21,7 +21,6 @@ public class Holiday : BaseEntity
 
     [Display(Name = "Name", Description = "Name")]
     [StringLength(50)]
-    [RegularExpression("([a-zA-Z]+)", ErrorMessage = "Enter only alphabetical letters for Name")]
     public required string Name { get; set; }
 
     public override string? ToString() => Name;

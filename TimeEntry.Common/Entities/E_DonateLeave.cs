@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TimeEntry.Common.Entities;
 
@@ -9,18 +9,18 @@ public class E_DonateLeave : BaseEntity
     [Display(Order = -1, AutoGenerateField = true)]
     public required int DonateLeaveId { get; set; }
 
-    [ForeignKey(nameof(Employee))]
+    [ForeignKey(nameof(DonateFrom_Employee))]
     [Display(Order = -1, AutoGenerateField = false)]
     public required int DonateFrom_EmployeeId { get; set; }
 
-    [ForeignKey(nameof(Employee))]
+    [ForeignKey(nameof(DonateTo_Employee))]
     [Display(Order = -1, AutoGenerateField = false)]
     public required int DonateTo_EmployeeId { get; set; }
     #endregion Omitted
 
     // entities
-    public required Employee DonateFrom_Employee { get; set; }
-    public required Employee DonateTo_Employee { get; set; }
+    public Employee? DonateFrom_Employee { get; set; }
+    public Employee? DonateTo_Employee { get; set; }
 
     [Display(Name = "When Donated", Description = "When Donated")]
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]

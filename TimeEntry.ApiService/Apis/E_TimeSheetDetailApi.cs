@@ -54,14 +54,14 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_TimeSheetDetail> repo = new(context);
+        E_TimeSheetDetailRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_TimeSheetDetail newRow)
     {
-        GenericRepo<E_TimeSheetDetail> repo = new(context);
+        E_TimeSheetDetailRepo repo = new(context);
         await repo.AddAsync(newRow);
         return Results.Created($"/api/timesheetDetails/{newRow.TimeSheetDetailId}", newRow);
     }
@@ -71,7 +71,7 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
         if (updatedRow.TimeSheetDetailId != id)
             return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
-        GenericRepo<E_TimeSheetDetail> repo = new(context);
+        E_TimeSheetDetailRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
@@ -80,7 +80,7 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_TimeSheetDetail> repo = new(context);
+        E_TimeSheetDetailRepo repo = new(context);
         var successNum = await repo.DeleteAsync("E_TimeSheetDetail", id);
         if (successNum == 0)
             return Results.Ok();

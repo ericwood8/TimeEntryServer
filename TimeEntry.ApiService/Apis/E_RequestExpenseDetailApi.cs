@@ -52,21 +52,21 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        GenericRepo<E_RequestExpenseDetail> repo = new(context);
+        E_RequestExpenseDetailRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.ExpenseDate);
         return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_RequestExpenseDetail> repo = new(context);
+        E_RequestExpenseDetailRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_RequestExpenseDetail newRow)
     {
-        GenericRepo<E_RequestExpenseDetail> repo = new(context);
+        E_RequestExpenseDetailRepo repo = new(context);
         await repo.AddAsync(newRow);
         return Results.Created($"/api/expenseDetails/{newRow.RequestExpenseDetailId}", newRow);
     }
@@ -76,7 +76,7 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
         if (updatedRow.RequestExpenseDetailId != id)
             return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
-        GenericRepo<E_RequestExpenseDetail> repo = new(context);
+        E_RequestExpenseDetailRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
@@ -85,7 +85,7 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_RequestExpenseDetail> repo = new(context);
+        E_RequestExpenseDetailRepo repo = new(context);
         var successNum = await repo.DeleteAsync("E_RequestExpenseDetail", id);
         if (successNum == 0)
             return Results.Ok();

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TimeEntry.Common.Entities;
 
@@ -40,6 +40,4 @@ public class RestrictLeave : BaseEntity
     [Display(Name = "Reason", Description = "Reason")]
     [StringLength(50)]
     public string? Reason { get; set; }
-
-    public override string? ToString() => Reason;
 }

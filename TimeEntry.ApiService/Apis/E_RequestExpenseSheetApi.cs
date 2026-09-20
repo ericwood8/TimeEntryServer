@@ -59,14 +59,14 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_RequestExpenseSheet> repo = new(context);
+        E_RequestExpenseSheetRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_RequestExpenseSheet newRow)
     {
-        GenericRepo<E_RequestExpenseSheet> repo = new(context);
+        E_RequestExpenseSheetRepo repo = new(context);
         await repo.AddAsync(newRow);
         return Results.Created($"/api{apiSubDir}/{newRow.RequestExpenseSheetId}", newRow);
     }
@@ -76,7 +76,7 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         if (updatedRow.RequestExpenseSheetId != id)
             return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
-        GenericRepo<E_RequestExpenseSheet> repo = new(context);
+        E_RequestExpenseSheetRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
@@ -85,7 +85,7 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_RequestExpenseSheet> repo = new(context);
+        E_RequestExpenseSheetRepo repo = new(context);
         var successNum = await repo.DeleteAsync("E_RequestExpenseSheet", id);
         if (successNum == 0)
             return Results.Ok();

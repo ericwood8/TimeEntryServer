@@ -1,8 +1,8 @@
-﻿namespace TimeEntry.Common.Enums;
+namespace TimeEntry.Common.Enums;
 
 public enum ClearanceType
 {
-    PublicTrust = 1, 
-    Secret = 2, 
+    PublicTrust = 1,
+    Secret = 2,
     TopSecret = 3
 }

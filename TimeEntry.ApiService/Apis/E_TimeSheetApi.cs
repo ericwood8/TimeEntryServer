@@ -1,4 +1,4 @@
-﻿namespace TimeEntry.ApiService.Apis;
+namespace TimeEntry.ApiService.Apis;
 
 using static Microsoft.AspNetCore.Http.TypedResults;
 
@@ -24,14 +24,13 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         .ProducesProblem(404)
         .ProducesProblem(500);
 
-        // Create new 
+        // Create new
         app.MapPost(_apiSubDir, CreateRow)
         .WithName($"Create{singular}")
         .WithOpenApi()
-        .ProducesProblem(422)
         .ProducesProblem(500);
 
-        // Update existing 
+        // Update existing
         app.MapPut(_apiSubDir + "/{id:int}", UpdateRow)
         .WithName($"Update{singular}")
         .WithOpenApi()
@@ -39,7 +38,7 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         .ProducesProblem(404)
         .ProducesProblem(500);
 
-        // Delete 
+        // Delete
         app.MapDelete(_apiSubDir + "/{id:int}", DeleteRow)
         .WithName($"Delete{singular}")
         .WithOpenApi()
@@ -49,23 +48,23 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
     {
-        GenericRepo<E_TimeSheet> repo = new(context);
+        E_TimeSheetRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.WhenEntered);
         return Ok(rows);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_TimeSheet> repo = new(context);
+        E_TimeSheetRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_TimeSheet newRow)
     {
-        GenericRepo<E_TimeSheet> repo = new(context);
+        E_TimeSheetRepo repo = new(context);
         await repo.AddAsync(newRow);
-        return Results.Created($"/api/timesheets/{newRow.TimeSheetId}", newRow);
+        return Results.Created($"/api{_apiSubDir}/{newRow.TimeSheetId}", newRow);
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] E_TimeSheet updatedRow)
@@ -73,7 +72,7 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         if (updatedRow.TimeSheetId != id)
             return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
-        GenericRepo<E_TimeSheet> repo = new(context);
+        E_TimeSheetRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
@@ -82,7 +81,7 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
     {
-        GenericRepo<E_TimeSheet> repo = new(context);
+        E_TimeSheetRepo repo = new(context);
         var successNum = await repo.DeleteAsync("E_TimeSheet", id);
         if (successNum == 0)
             return Results.Ok();

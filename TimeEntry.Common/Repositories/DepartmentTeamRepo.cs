@@ -1,4 +1,4 @@
-﻿namespace TimeEntry.Common.Repositories;
+namespace TimeEntry.Common.Repositories;
 
 public class DepartmentTeamRepo : NameActiveRepo<DepartmentTeam>
 {
@@ -9,7 +9,7 @@ public class DepartmentTeamRepo : NameActiveRepo<DepartmentTeam>
     public async Task<List<DepartmentTeam>> GetAllOfDepartment(int id)
     {
         return await _dbSet
-            .Where(t => t.DepartmentId.Equals(id) && t.IsActive) // only fetch active of department
+            .Where(t => t.DepartmentId.Equals(id) && t.IsActive) // only fetch active
             .OrderBy(d => d.Name) // order by name
             .ToListAsync();
     }
