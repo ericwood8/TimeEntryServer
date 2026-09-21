@@ -111,7 +111,7 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
         if (rowToDelete == null)
             return -1;
 
-        if (SpCanDeleteAsync(deleteFromTable, deleteId).Result.Count > 0)
+        if ((await SpCanDeleteAsync(deleteFromTable, deleteId)).Count > 0)
             return -2;
 
         _dbSet.Remove(rowToDelete);

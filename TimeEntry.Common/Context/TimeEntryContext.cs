@@ -66,6 +66,12 @@ namespace TimeEntry.Common.Context
 
             // Configure the keyless entity
             modelBuilder.Entity<DeleteTableResult>().HasNoKey();
+
+            // Where the class and the database disagree about a column name (the database is not changed by this code):
+            // the user's Name is stored in the column UserName ...
+            modelBuilder.Entity<TimeEntryUser>().Property(u => u.Name).HasColumnName("UserName");
+            // ... and the expense sheet's key column was created with a typo, RequestExpenseSheetd. Remove this line if that column is renamed.
+            modelBuilder.Entity<E_RequestExpenseSheet>().Property(s => s.RequestExpenseSheetId).HasColumnName("RequestExpenseSheetd");
         }
 
         #region Stored Procedures

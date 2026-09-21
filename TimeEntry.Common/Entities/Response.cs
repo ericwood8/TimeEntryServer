@@ -27,8 +27,9 @@ public class Response : BaseEntity
     public required Employee Manager { get; set; }
     public required E_Request E_Request { get; set; }
 
-    // enums
-    public required SY_ResponseType ResponseType { get; set; }
+    // enums -- worked out from ResponseTypeId. The table has no ResponseType column, so EF must not map one
+    [NotMapped]
+    public SY_ResponseType ResponseType => (SY_ResponseType)ResponseTypeId;
 
     [Display(Name = "When Responded", Description = "When Responded")]
     [DisplayFormat(DataFormatString = "{0:MM/dd/yyyy}")]

@@ -22,8 +22,9 @@ public class TimeEntryUser : BaseNameActiveEntity
     // entities
     public Employee? Employee { get; set; }
 
-    // enums
-    public SY_Role SY_Role { get; set; }
+    // enums -- worked out from SY_RoleId. The table has no SY_Role column, so EF must not map one
+    [NotMapped]
+    public SY_Role SY_Role => (SY_Role)SY_RoleId;
 
     [Display(Name = "Pword", Description = "Pword")]
     [StringLength(50)]
