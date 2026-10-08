@@ -17,7 +17,6 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Get all
         app.MapGet(_apiSubDir, GetAllIncludeTeams)
        .WithName($"Get{plural}")
-       .WithOpenApi()
        .Produces<IEnumerable<T>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
@@ -25,7 +24,6 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Get by ID
         app.MapGet(_apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .WithOpenApi()
         .Produces<T>()
         .ProducesProblem(404)
         .ProducesProblem(500);
@@ -33,7 +31,6 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Create new 
         app.MapPost(_apiSubDir, CreateRow)
         .WithName($"Create{singular}")
-        .WithOpenApi()
         .ProducesProblem(400)
         .ProducesProblem(422)
         .ProducesProblem(500);
@@ -41,7 +38,6 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Update existing 
         app.MapPut(_apiSubDir + "/{id:int}", UpdateRow)
         .WithName($"Update{singular}")
-        .WithOpenApi()
         .ProducesProblem(400)
         .ProducesProblem(404)
         .ProducesProblem(422)
@@ -50,14 +46,12 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Delete 
         app.MapDelete(_apiSubDir + "/{id:int}", DeleteRow)
         .WithName($"Delete{singular}")
-        .WithOpenApi()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Get by Name
         app.MapGet(_apiSubDir + "/{name}", GetByName)
         .WithName($"Get{singular}ByName")
-        .WithOpenApi()
         .Produces<T>()
         .ProducesValidationProblem(400)
         .ProducesProblem(404)

@@ -15,7 +15,6 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         // Get all
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
-       .WithOpenApi()
        .Produces<IEnumerable<T>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
@@ -23,7 +22,6 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         // Get by ID
         app.MapGet(_apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .WithOpenApi()
         .Produces<T>()
         .ProducesProblem(404)
         .ProducesProblem(500);
@@ -31,14 +29,12 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         // Create new 
         app.MapPost(_apiSubDir, CreateRow)
         .WithName($"Create{singular}")
-        .WithOpenApi()
         .ProducesProblem(400)
         .ProducesProblem(500);
 
         // Update existing 
         app.MapPut(_apiSubDir + "/{id:int}", UpdateRow)
         .WithName($"Update{singular}")
-        .WithOpenApi()
         .ProducesProblem(400)
         .ProducesProblem(404)
         .ProducesProblem(500);
@@ -46,7 +42,6 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         // Delete 
         app.MapDelete(_apiSubDir + "/{id:int}", DeleteRow)
         .WithName($"Delete{singular}")
-        .WithOpenApi()
         .ProducesProblem(404)
         .ProducesProblem(500);
     }

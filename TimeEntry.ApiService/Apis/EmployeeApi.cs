@@ -11,7 +11,6 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Get all
         app.MapGet(apiSubDir, GetAllIncludeDropdowns)
        .WithName($"Get{plural}")
-       .WithOpenApi()
        .Produces<IEnumerable<T>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
@@ -19,7 +18,6 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Get by ID
         app.MapGet(apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .WithOpenApi()
         .Produces<T>()
         .ProducesProblem(404)
         .ProducesProblem(500);
@@ -27,7 +25,6 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Create new 
         app.MapPost(apiSubDir, CreateRow)
         .WithName($"Create{singular}")
-        .WithOpenApi()
         .ProducesProblem(400)
         .ProducesProblem(422)
         .ProducesProblem(500);
@@ -35,7 +32,6 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Update existing 
         app.MapPut(apiSubDir + "/{id:int}", UpdateRow)
         .WithName($"Update{singular}")
-        .WithOpenApi()
         .ProducesProblem(400)
         .ProducesProblem(404)
         .ProducesProblem(422)
@@ -44,14 +40,12 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Delete 
         app.MapDelete(apiSubDir + "/{id:int}", DeleteRow)
         .WithName($"Delete{singular}")
-        .WithOpenApi()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Get by Name
         app.MapGet(apiSubDir + "/{name}", GetByName)
         .WithName($"Get{singular}ByName")
-        .WithOpenApi()
         .Produces<T>()
         .ProducesProblem(400)
         .ProducesProblem(404)

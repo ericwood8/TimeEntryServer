@@ -22,7 +22,6 @@ public class AuthApi : IApi
             .AllowAnonymous()
             .RequireRateLimiting(LoginRateLimitPolicy)
             .WithName("Login")
-            .WithOpenApi()
             .Produces<LoginResponse>()
             .ProducesProblem(400)
             .ProducesProblem(401)
@@ -30,13 +29,11 @@ public class AuthApi : IApi
 
         app.MapGet("/auth/me", Me)
             .WithName("GetCurrentUser")
-            .WithOpenApi()
             .Produces<TimeEntryUserDto>()
             .ProducesProblem(401);
 
         app.MapPost("/auth/change-password", ChangePassword)
             .WithName("ChangeMyPassword")
-            .WithOpenApi()
             .ProducesProblem(400)
             .ProducesProblem(401);
     }

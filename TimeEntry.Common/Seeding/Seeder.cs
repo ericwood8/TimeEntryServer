@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions;
-using TimeEntry.Common.Context;
+﻿using TimeEntry.Common.Context;
 
 namespace TimeEntry.Common.Seeding;
 public class Seeder(TimeEntryContext context)
@@ -13,7 +12,7 @@ public class Seeder(TimeEntryContext context)
 
             strategy.Execute(() =>
             {
-                context.BulkSaveChanges();
+                context.SaveChanges();
             });
         }
     }

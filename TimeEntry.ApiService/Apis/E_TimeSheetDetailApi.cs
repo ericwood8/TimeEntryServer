@@ -13,7 +13,6 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
         // Get all of timesheet
         app.MapGet("/timesheetDetails/timeSheet/{timesheetId:int}", GetAllOfTimesheet)
        .WithName("GetTimeSheetDetails")
-       .WithOpenApi()
        .Produces<IEnumerable<T>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
@@ -21,28 +20,24 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
         // Get by ID
         app.MapGet("/timesheetDetails/{id:int}", GetById)
         .WithName("GetTimeSheetDetailById")
-        .WithOpenApi()
         .Produces<T>()
         .ProducesProblem(500);
 
         // Create new 
         app.MapPost("/timesheetDetails", CreateRow)
         .WithName("CreateTimeSheetDetail")
-        .WithOpenApi()
         .ProducesProblem(422)
         .ProducesProblem(500);
 
         // Update existing 
         app.MapPut("/timesheetDetails/{id:int}", UpdateRow)
         .WithName("UpdateTimeSheetDetails")
-        .WithOpenApi()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Delete 
         app.MapDelete("/timesheetDetails/{id:int}", DeleteRow)
         .WithName("DeleteTimeSheetDetail")
-        .WithOpenApi()
         .ProducesProblem(404)
         .ProducesProblem(500);
     }

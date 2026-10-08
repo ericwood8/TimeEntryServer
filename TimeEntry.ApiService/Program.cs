@@ -75,8 +75,6 @@ if (allowedOrigins.Length > 0)
         policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader()));
 }
 
-Environment.SetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "false");
-
 var app = builder.Build();
 
 app.MapDefaultEndpoints();

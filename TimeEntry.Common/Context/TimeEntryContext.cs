@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using TimeEntry.Common.Models;
+﻿using TimeEntry.Common.Models;
 
 namespace TimeEntry.Common.Context
 {

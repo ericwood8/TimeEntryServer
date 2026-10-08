@@ -14,7 +14,6 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         // Get all
         app.MapGet(apiSubDir, GetAll)
        .WithName($"Get{plural}")
-       .WithOpenApi()
        .Produces<IEnumerable<TimeEntryUserDto>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
@@ -22,7 +21,6 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         // Get by ID
         app.MapGet(apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .WithOpenApi()
         .Produces<TimeEntryUserDto>()
         .ProducesProblem(404)
         .ProducesProblem(500);
@@ -30,7 +28,6 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         // Create new 
         app.MapPost(apiSubDir, CreateRow)
         .WithName($"Create{singular}")
-        .WithOpenApi()
         .ProducesProblem(400)
         .ProducesProblem(422)
         .ProducesProblem(500);
@@ -38,7 +35,6 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         // Update existing 
         app.MapPut(apiSubDir + "/{id:int}", UpdateRow)
         .WithName($"Update{singular}")
-        .WithOpenApi()
         .ProducesProblem(400)
         .ProducesProblem(404)
         .ProducesProblem(422)
@@ -47,14 +43,12 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         // Delete 
         app.MapDelete(apiSubDir + "/{id:int}", DeleteRow)
         .WithName($"Delete{singular}")
-        .WithOpenApi()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
         // Get by Name
         app.MapGet(apiSubDir + "/{name}", GetByName)
         .WithName($"Get{singular}ByName")
-        .WithOpenApi()
         .Produces<TimeEntryUserDto>()
         .ProducesProblem(404)
         .ProducesProblem(500);
