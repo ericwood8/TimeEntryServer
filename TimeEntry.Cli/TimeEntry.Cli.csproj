@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>timeentry</AssemblyName>
+    <RootNamespace>TimeEntry.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <!-- `dotnet pack` makes a .NET tool: `dotnet tool install -g TimeEntry.Cli`, then `timeentry ...`. -->
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>timeentry</ToolCommandName>
+    <PackageId>TimeEntry.Cli</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>ericwood8</Authors>
+    <Description>Command-line client for the TimeEntry API: list, search, add, change and delete rows, and answer requests.</Description>
+  </PropertyGroup>
+
+</Project>

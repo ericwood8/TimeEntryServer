@@ -23,6 +23,7 @@
     <ProjectReference Include="..\TimeEntry.AppHost\TimeEntry.AppHost.csproj" />
     <ProjectReference Include="..\TimeEntry.ApiService\TimeEntry.ApiService.csproj" />
     <ProjectReference Include="..\TimeEntry.Common\TimeEntry.Common.csproj" />
+    <ProjectReference Include="..\TimeEntry.Cli\TimeEntry.Cli.csproj" />
   </ItemGroup>
 
   <ItemGroup>

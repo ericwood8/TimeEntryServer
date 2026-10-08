@@ -167,3 +167,15 @@ One-time setup:
 3. Sign in to the UI with that Admin and add the other users through `POST /timeentryusers`.
 
 Optional: `RateLimit:LoginPermitsPerMinute` (default 5 per client address) and `Cors:AllowedOrigins` (CORS is off unless an origin is listed; the UI calls the API through its own `/api` proxy).
+
+## Command-line client
+
+`TimeEntry.Cli` builds a `timeentry` command that calls the running API (it never opens the database, so the API's rules always apply).
+
+```
+dotnet run --project TimeEntry.Cli -- -U Boss list departments
+dotnet run --project TimeEntry.Cli -- -U Boss add projects --set name="Bridge Repair"
+dotnet run --project TimeEntry.Cli -- --help
+```
+
+It signs in on every run (password from `-P`, `TIMEENTRY_PASSWORD`, or a hidden prompt). The API allows about 5 sign-ins a minute, so a script should sign in once: `export TIMEENTRY_TOKEN=$(timeentry -U Boss login)`. Nothing is saved to disk. `dotnet pack TimeEntry.Cli` makes a .NET tool you can install with `dotnet tool install -g`.

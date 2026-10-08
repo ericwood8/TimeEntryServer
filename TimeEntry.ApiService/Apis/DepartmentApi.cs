@@ -120,6 +120,7 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         if (updatedRow.Name.IsNameBad())
             return ApiProblems.BadName(); // 400 error if bad characters or empty
 
+        bool teamsSent = updatedRow.Teams != null; // no list at all means "leave the teams alone"; an empty list removes them all
         List<DepartmentTeam> incomingTeams = updatedRow.Teams ?? [];
         foreach (var team in incomingTeams)
         {
@@ -142,7 +143,7 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
 
         // teams left out of the list are removed, unless something (an employee, a leave restriction) still uses them
         HashSet<int> keptIds = incomingTeams.Select(t => t.DepartmentTeamId).ToHashSet();
-        List<DepartmentTeam> teamsToRemove = storedTeams.Values.Where(t => t.IsActive && !keptIds.Contains(t.DepartmentTeamId)).ToList();
+        List<DepartmentTeam> teamsToRemove = !teamsSent ? [] : storedTeams.Values.Where(t => t.IsActive && !keptIds.Contains(t.DepartmentTeamId)).ToList();
         foreach (var team in teamsToRemove)
         {
             if ((await context.SpCanDeleteAsync("DepartmentTeam", team.DepartmentTeamId)).Count > 0)
