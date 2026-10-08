@@ -47,9 +47,8 @@ public class DepartmentTeamApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         // Get by Name
         app.MapGet(_apiSubDir + "/{name}", GetByName)
         .WithName($"Get{singular}ByName")
-        .Produces<T>()
+        .Produces<List<T>>()
         .ProducesProblem(400)
-        .ProducesProblem(404)
         .ProducesProblem(500);
     }
 
@@ -74,7 +73,7 @@ public class DepartmentTeamApi<T> : BaseApi<T> where T : BaseNameActiveEntity
 
         DepartmentTeamRepo repo = new(context);
         var rows = await repo.GetByName(name);
-        return rows != null ? Results.Ok(rows) : Results.NotFound();
+        return Results.Ok(rows); // no match is an empty list, not a 404
     }
 
     private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] DepartmentTeam newRow)

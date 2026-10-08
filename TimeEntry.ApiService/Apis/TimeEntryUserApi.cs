@@ -49,8 +49,8 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         // Get by Name
         app.MapGet(apiSubDir + "/{name}", GetByName)
         .WithName($"Get{singular}ByName")
-        .Produces<TimeEntryUserDto>()
-        .ProducesProblem(404)
+        .Produces<List<TimeEntryUserDto>>()
+        .ProducesProblem(400)
         .ProducesProblem(500);
     }
 
