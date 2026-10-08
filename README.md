@@ -151,3 +151,19 @@ Search for "ConnectionString" and fix all of them.
 4. **Submit a Pull Request**: Once your changes are ready, submit a pull request for review.
 
 Thank you for contributing to the TimeEntry project!
+
+---
+
+## Signing in (security)
+
+Every endpoint except `POST /auth/login` needs a token. Roles come from `SY_Role`: Admin and Human Resources may change reference data and see every employee's rows; Admin alone maintains users; everyone else sees their own rows and those of the people who report to them. Passwords and security answers are stored as salted hashes and are never returned by the API.
+
+One-time setup:
+
+1. Run `TimeEntryDB/WidenPasswordColumns.sql` against the TimeEntry database (the hashes are longer than the old 50-character columns).
+2. Set the settings below with user-secrets or environment variables, never in a committed file:
+   - `Jwt:Key` (at least 32 characters; in Development a temporary key is used when it is missing).
+   - `Bootstrap:AdminUserName` and `Bootstrap:AdminPassword` (8+ characters with a letter and a digit). They only take effect while the `TimeEntryUser` table is empty; remove them after the first start.
+3. Sign in to the UI with that Admin and add the other users through `POST /timeentryusers`.
+
+Optional: `RateLimit:LoginPermitsPerMinute` (default 5 per client address) and `Cors:AllowedOrigins` (CORS is off unless an origin is listed; the UI calls the API through its own `/api` proxy).

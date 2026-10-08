@@ -19,14 +19,14 @@ public interface INameActiveRepo<T> where T : BaseNameActiveEntity
 
     //--------- Insert -----------------
     public Task<bool> AddAsync(T newRow);
-    public void AddRange(IEnumerable<T> newRows);
+    public Task AddRangeAsync(IEnumerable<T> newRows);
 
     // ------- Update -------------------
     public Task<T> UpdateAsync(int id, T rowToUpdate);
 
     // ------- Delete -------------------
     public Task<int> DeleteAsync(string deleteFromTable, int deleteId);
-    public void RemoveRange(List<T> rowsToDelete);
+    public Task RemoveRangeAsync(List<T> rowsToDelete);
 
     // ------- Special - such as count -------------------
     public int Count();

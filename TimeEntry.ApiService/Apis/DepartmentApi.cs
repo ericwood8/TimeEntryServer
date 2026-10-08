@@ -10,7 +10,7 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
 
     }
 
-    public override void Register(WebApplication app)
+    public override void Register(IEndpointRouteBuilder app)
     {
         BreakIntoStrings(out string singular, out string plural, out string _apiSubDir);
 
@@ -149,7 +149,7 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         var teamsToDelete = postUpdateTeams?.Where(t => !preUpdateTeams!.Any(s => s.Name == t.Name)).ToList();
         if (teamsToDelete!.Count > 0)
         {
-            teamRepo.RemoveRange(teamsToDelete!);
+            await teamRepo.RemoveRangeAsync(teamsToDelete!);
         }
 
         var adjustedRow = await repo.GetByIdIncludeTeams(id);

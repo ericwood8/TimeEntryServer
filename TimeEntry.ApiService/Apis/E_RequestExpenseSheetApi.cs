@@ -1,4 +1,6 @@
-﻿namespace TimeEntry.ApiService.Apis;
+﻿using TimeEntry.ApiService.Security;
+
+namespace TimeEntry.ApiService.Apis;
 
 using static Microsoft.AspNetCore.Http.TypedResults;
 
@@ -6,7 +8,7 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
 {
     private const string apiSubDir = "/expenseSheets";
 
-    public override void Register(WebApplication app)
+    public override void Register(IEndpointRouteBuilder app)
     {
         string singular = "ExpenseSheet";
         string plural = singular + "s";
@@ -50,41 +52,62 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAllIncludingDetails([FromServices] TimeEntryContext context)
+    private static async Task<IResult> GetAllIncludingDetails([FromServices] TimeEntryContext context, ClaimsPrincipal user)
     {
+        var scope = await EmployeeScope.ForAsync(context, user);
+        int[] ids = scope.EmployeeIds;
         E_RequestExpenseSheetRepo repo = new(context);
-        var rows = await repo.GetAllIncludingDetails();
+        var rows = await repo.GetAllIncludingDetails(scope.All ? null : s => ids.Contains(s.EmployeeId));
         return Ok(rows);
     }
 
-    private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
+    private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
     {
+        var scope = await EmployeeScope.ForAsync(context, user);
         E_RequestExpenseSheetRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
-        return row != null ? Results.Ok(row) : Results.NotFound();
+        if (row == null)
+            return Results.NotFound();
+        return scope.Deny(row.EmployeeId) ?? Results.Ok(row);
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] E_RequestExpenseSheet newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] E_RequestExpenseSheet newRow)
     {
+        // whose expenses they are comes from the token; only Admin and Human Resources may enter a sheet for somebody else
+        if (!user.CanManageAll())
+        {
+            if (user.EmployeeId() == null)
+                return Results.Forbid();
+            newRow.EmployeeId = user.EmployeeId()!.Value;
+        }
+
         E_RequestExpenseSheetRepo repo = new(context);
         await repo.AddAsync(newRow);
         return Results.Created($"/api{apiSubDir}/{newRow.RequestExpenseSheetId}", newRow);
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] E_RequestExpenseSheet updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] E_RequestExpenseSheet updatedRow)
     {
         if (updatedRow.RequestExpenseSheetId != id)
             return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
 
+        var scope = await EmployeeScope.ForAsync(context, user);
+        int? owner = await RowOwners.ExpenseSheet(context, id);
+        if (scope.Deny(owner) is { } denied)
+            return denied; // 404 if there is no row with that id, 403 if it is not the caller's
+        updatedRow.EmployeeId = owner!.Value; // the sheet cannot be handed to someone else
+
         E_RequestExpenseSheetRepo repo = new(context);
-        if (!await repo.ExistsAsync(id))
-            return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }
 
-    private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
+    private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
     {
+        var scope = await EmployeeScope.ForAsync(context, user);
+        if (scope.Deny(await RowOwners.ExpenseSheet(context, id)) is { } denied)
+            return denied;
+
         E_RequestExpenseSheetRepo repo = new(context);
         var successNum = await repo.DeleteAsync("E_RequestExpenseSheet", id);
         if (successNum == 0)

@@ -27,7 +27,7 @@ public class TimeEntryUser : BaseNameActiveEntity
     public SY_Role SY_Role => (SY_Role)SY_RoleId;
 
     [Display(Name = "Pword", Description = "Pword")]
-    [StringLength(50)]
+    [StringLength(200)]
     public required string Pword { get; set; }
 
     [Display(Name = "Hint", Description = "Hint")]
@@ -35,7 +35,7 @@ public class TimeEntryUser : BaseNameActiveEntity
     public required string Hint { get; set; }
 
     [Display(Name = "Answer", Description = "Answer")]
-    [StringLength(50)]
+    [StringLength(200)]
     public required string Answer { get; set; }
 
     [Display(Name = "Two Factor Auth", Description = "Two Factor Auth")]

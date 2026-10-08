@@ -63,9 +63,11 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
         return await _dbSet.ToListAsync();
     }
 
-    public async Task<List<T>> GetAllOrderByDescending(Expression<Func<T, DateTime>> predicate)
+    /// <summary> All rows, newest first; <paramref name="where"/> narrows them when given. </summary>
+    public async Task<List<T>> GetAllOrderByDescending(Expression<Func<T, DateTime>> predicate, Expression<Func<T, bool>>? where = null)
     {
-        return await _dbSet.OrderByDescending(predicate).ToListAsync();
+        IQueryable<T> rows = where == null ? _dbSet : _dbSet.Where(where);
+        return await rows.OrderByDescending(predicate).ToListAsync();
     }
 
 
@@ -86,10 +88,10 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
         return true;
     }
 
-    public void AddRange(IEnumerable<T> newRows)
+    public async Task AddRangeAsync(IEnumerable<T> newRows)
     {
         _dbSet.AddRange(newRows);
-        _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
     }
 
     // ------- Update -------------------
@@ -117,10 +119,10 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
         return 0;
     }
 
-    public void RemoveRange(List<T> rowsToDelete)
+    public async Task RemoveRangeAsync(List<T> rowsToDelete)
     {
         _dbSet.RemoveRange(rowsToDelete);
-        _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
     }
 
     // ------- Special - such as count -------------------

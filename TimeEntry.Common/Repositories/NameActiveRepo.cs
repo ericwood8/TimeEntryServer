@@ -85,10 +85,10 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
         return true;
     }
 
-    public void AddRange(IEnumerable<T> newRows)
+    public async Task AddRangeAsync(IEnumerable<T> newRows)
     {
         _dbSet.AddRange(newRows);
-        _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
     }
 
     // ------- Update -------------------
@@ -119,10 +119,10 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
         return 0;
     }
 
-    public void RemoveRange(List<T> rowsToDelete)
+    public async Task RemoveRangeAsync(List<T> rowsToDelete)
     {
         _dbSet.RemoveRange(rowsToDelete);
-        _context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
     }
 
     // ------- Special - such as count or IsDup() -------------------

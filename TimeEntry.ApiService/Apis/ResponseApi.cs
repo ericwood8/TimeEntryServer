@@ -4,7 +4,7 @@ using static Microsoft.AspNetCore.Http.TypedResults;
 
 public class ResponseApi<T> : BaseApi<T> where T : class
 {
-    public override void Register(WebApplication app)
+    public override void Register(IEndpointRouteBuilder app)
     {
         BreakIntoStrings(out string singular, out string plural, out string _apiSubDir);
 

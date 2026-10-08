@@ -11,7 +11,7 @@ public abstract class BaseApi<T> : IApi where T : class
         _apiSubDir = apiSubDir;
     }
 
-    public abstract void Register(WebApplication app);
+    public abstract void Register(IEndpointRouteBuilder app);
 
     /// <summary>
     ///    Take model and breaks name into usuable strings.
