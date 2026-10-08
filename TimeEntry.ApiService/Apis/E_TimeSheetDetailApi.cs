@@ -1,4 +1,5 @@
 ﻿using TimeEntry.ApiService.Security;
+using TimeEntry.Common.Models;
 
 namespace TimeEntry.ApiService.Apis;
 
@@ -13,14 +14,14 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
         // Get all of timesheet
         app.MapGet("/timesheetDetails/timeSheet/{timesheetId:int}", GetAllOfTimesheet)
        .WithName("GetTimeSheetDetails")
-       .Produces<IEnumerable<T>>()
+       .Produces<IEnumerable<TimeSheetDetailRow>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
 
         // Get by ID
         app.MapGet("/timesheetDetails/{id:int}", GetById)
         .WithName("GetTimeSheetDetailById")
-        .Produces<T>()
+        .Produces<TimeSheetDetailRow>()
         .ProducesProblem(500);
 
         // Create new 
@@ -61,29 +62,31 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
             return denied;
 
         E_TimeSheetDetailRepo repo = new(context);
-        var row = await repo.GetByIdAsync(id);
+        var row = await repo.GetRowWithNames(id);
         return row != null ? Results.Ok(row) : Results.NotFound();
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] E_TimeSheetDetail newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] TimeSheetDetailSave save)
     {
+        E_TimeSheetDetail newRow = save.ToEntity();
         // a detail may only be added to a time sheet the caller may use
         var scope = await EmployeeScope.ForAsync(context, user);
         int? sheetOwner = await RowOwners.TimeSheet(context, newRow.E_TimeSheetId);
         if (sheetOwner == null)
-            return Results.BadRequest(); // 400 error if the time sheet does not exist
+            return ApiProblems.Invalid("There is no time sheet with that id."); // 400 error if the time sheet does not exist
         if (scope.Deny(sheetOwner) is { } denied)
             return denied;
 
         E_TimeSheetDetailRepo repo = new(context);
         await repo.AddAsync(newRow);
-        return Results.Created($"/api/timesheetDetails/{newRow.TimeSheetDetailId}", newRow);
+        return Results.Created($"/api/timesheetDetails/{newRow.TimeSheetDetailId}", await repo.GetRowWithNames(newRow.TimeSheetDetailId));
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] E_TimeSheetDetail updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] TimeSheetDetailSave save)
     {
+        E_TimeSheetDetail updatedRow = save.ToEntity();
         if (updatedRow.TimeSheetDetailId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         var scope = await EmployeeScope.ForAsync(context, user);
         var owner = await RowOwners.TimeSheetDetail(context, id);
@@ -92,8 +95,8 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
         updatedRow.E_TimeSheetId = owner!.ParentId; // the detail cannot be moved to another time sheet
 
         E_TimeSheetDetailRepo repo = new(context);
-        var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(postUpdate);
+        await repo.UpdateAsync(id, updatedRow);
+        return Results.Ok(await repo.GetRowWithNames(id));
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -108,8 +111,8 @@ public class E_TimeSheetDetailApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

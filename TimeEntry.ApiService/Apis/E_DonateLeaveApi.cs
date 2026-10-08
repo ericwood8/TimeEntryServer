@@ -13,14 +13,14 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         // Get all
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
-       .Produces<IEnumerable<T>>()
+       .Produces<IEnumerable<DonateLeaveDto>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
 
         // Get by ID
         app.MapGet(_apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .Produces<T>()
+        .Produces<DonateLeaveDto>()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -51,7 +51,7 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         E_DonateLeaveRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.WhenDonated,
             scope.All ? null : d => ids.Contains(d.DonateFrom_EmployeeId) || ids.Contains(d.DonateTo_EmployeeId));
-        return Ok(rows);
+        return Ok(rows.Select(DonateLeaveDto.From));
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -61,11 +61,12 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         var row = await repo.GetByIdAsync(id);
         if (row == null)
             return Results.NotFound();
-        return scope.Allows(row.DonateFrom_EmployeeId) || scope.Allows(row.DonateTo_EmployeeId) ? Results.Ok(row) : Results.Forbid();
+        return scope.Allows(row.DonateFrom_EmployeeId) || scope.Allows(row.DonateTo_EmployeeId) ? Results.Ok(DonateLeaveDto.From(row)) : Results.Forbid();
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] E_DonateLeave newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] DonateLeaveSave save)
     {
+        E_DonateLeave newRow = save.ToEntity();
         // the hours leave the caller's balance: who gives comes from the token; only Admin and Human Resources may enter a donation for somebody else
         if (!user.CanManageAll())
         {
@@ -76,13 +77,14 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
 
         E_DonateLeaveRepo repo = new(context);
         await repo.AddAsync(newRow);
-        return Results.Created($"/api{_apiSubDir}/{newRow.DonateLeaveId}", newRow);
+        return Results.Created($"/api{_apiSubDir}/{newRow.DonateLeaveId}", DonateLeaveDto.From(newRow));
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] E_DonateLeave updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] DonateLeaveSave save)
     {
+        E_DonateLeave updatedRow = save.ToEntity();
         if (updatedRow.DonateLeaveId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         var scope = await EmployeeScope.ForAsync(context, user);
         var stored = await RowOwners.Donation(context, id);
@@ -92,7 +94,7 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
 
         E_DonateLeaveRepo repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(postUpdate);
+        return Results.Ok(DonateLeaveDto.From(postUpdate));
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -106,8 +108,8 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

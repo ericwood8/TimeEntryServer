@@ -11,14 +11,14 @@ public class ResponseApi<T> : BaseApi<T> where T : class
         // Get all
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
-       .Produces<IEnumerable<T>>()
+       .Produces<IEnumerable<ResponseDto>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
 
         // Get by ID
         app.MapGet(_apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .Produces<T>()
+        .Produces<ResponseDto>()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -45,33 +45,35 @@ public class ResponseApi<T> : BaseApi<T> where T : class
     {
         ResponseRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.WhenResponded);
-        return Ok(rows);
+        return Ok(rows.Select(ResponseDto.From));
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {
         ResponseRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
-        return row != null ? Results.Ok(row) : Results.NotFound();
+        return row != null ? Results.Ok(ResponseDto.From(row)) : Results.NotFound();
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] Response newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] ResponseSave save)
     {
+        Response newRow = save.ToEntity();
         ResponseRepo repo = new(context);
         await repo.AddAsync(newRow);
-        return Results.Created($"/api{_apiSubDir}/{newRow.ResponseId}", newRow);
+        return Results.Created($"/api{_apiSubDir}/{newRow.ResponseId}", ResponseDto.From(newRow));
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Response updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] ResponseSave save)
     {
+        Response updatedRow = save.ToEntity();
         if (updatedRow.ResponseId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         ResponseRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
-            return Results.NotFound(); // 404 error if there is no row with that id
+            return ApiProblems.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(postUpdate);
+        return Results.Ok(ResponseDto.From(postUpdate));
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
@@ -81,8 +83,8 @@ public class ResponseApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

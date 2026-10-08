@@ -13,14 +13,14 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         // Get all
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
-       .Produces<IEnumerable<T>>()
+       .Produces<IEnumerable<TimeSheetDto>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
 
         // Get by ID
         app.MapGet(_apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .Produces<T>()
+        .Produces<TimeSheetDto>()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -49,7 +49,7 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         int[] ids = scope.EmployeeIds;
         E_TimeSheetRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.WhenEntered, scope.All ? null : t => ids.Contains(t.EmployeeId));
-        return Ok(rows);
+        return Ok(rows.Select(TimeSheetDto.From));
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -59,11 +59,12 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         var row = await repo.GetByIdAsync(id);
         if (row == null)
             return Results.NotFound();
-        return scope.Deny(row.EmployeeId) ?? Results.Ok(row);
+        return scope.Deny(row.EmployeeId) ?? Results.Ok(TimeSheetDto.From(row));
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] E_TimeSheet newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] TimeSheetSave save)
     {
+        E_TimeSheet newRow = save.ToEntity();
         // whose time sheet it is comes from the token; only Admin and Human Resources may enter one for somebody else
         if (!user.CanManageAll())
         {
@@ -74,13 +75,14 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
 
         E_TimeSheetRepo repo = new(context);
         await repo.AddAsync(newRow);
-        return Results.Created($"/api{_apiSubDir}/{newRow.TimeSheetId}", newRow);
+        return Results.Created($"/api{_apiSubDir}/{newRow.TimeSheetId}", TimeSheetDto.From(newRow));
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] E_TimeSheet updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] TimeSheetSave save)
     {
+        E_TimeSheet updatedRow = save.ToEntity();
         if (updatedRow.TimeSheetId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         var scope = await EmployeeScope.ForAsync(context, user);
         int? owner = await RowOwners.TimeSheet(context, id);
@@ -91,7 +93,7 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
 
         E_TimeSheetRepo repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(postUpdate);
+        return Results.Ok(TimeSheetDto.From(postUpdate));
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -105,8 +107,8 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

@@ -15,14 +15,14 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         // Get all
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
-       .Produces<IEnumerable<T>>()
+       .Produces<IEnumerable<RequestDto>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
 
         // Get by ID
         app.MapGet(_apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .Produces<T>()
+        .Produces<RequestDto>()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -60,7 +60,7 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         int[] ids = scope.EmployeeIds;
         E_RequestRepo repo = new(context);
         var rows = await repo.GetAllOrderByDescending(c => c.WhenRequested, scope.All ? null : r => ids.Contains(r.EmployeeId));
-        return Ok(rows);
+        return Ok(rows.Select(RequestDto.From));
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -70,22 +70,23 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         var row = await repo.GetByIdAsync(id);
         if (row == null)
             return Results.NotFound();
-        return scope.Deny(row.EmployeeId) ?? Results.Ok(row);
+        return scope.Deny(row.EmployeeId) ?? Results.Ok(RequestDto.From(row));
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] E_Request newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] RequestSave save)
     {
+        E_Request newRow = save.ToEntity();
         if ((newRow.OvertimeHrsRequested != null) && (newRow.OvertimeHrsRequested <= 0))
         {
-            return Results.BadRequest(); // 400 error if over time bad
+            return ApiProblems.Invalid("Overtime hours requested must be more than zero."); // 400 error if over time bad
         }
         else if ((newRow.LeaveTypeId != null) && (newRow.LeaveStart == null))
         {
-            return Results.BadRequest(); // 400 error if bad
+            return ApiProblems.Invalid("A leave request needs a start date."); // 400 error if bad
         }
         else if ((newRow.LeaveTypeId != null) && (newRow.LeaveEnd == null))
         {
-            return Results.BadRequest(); // 400 error if bad
+            return ApiProblems.Invalid("A leave request needs an end date."); // 400 error if bad
         }
 
         // whose request it is comes from the token; only Admin and Human Resources may enter one for somebody else
@@ -108,21 +109,18 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         if (IsDecision(newRow.SY_RequestStatusTypeId) && !MayDecideOwn(user, newRow.EmployeeId))
             return Results.Forbid();
 
-        // Pending so set WhenRequested date
-        if (newRow.SY_RequestStatusTypeId == (int)SY_RequestStatusType.Pending)
-        {
-            newRow.WhenRequested = DateTime.Now;
-        }
+        newRow.WhenRequested = DateTime.Now; // the server sets it
 
         E_RequestRepo repo = new(context);
         await repo.AddAsync(newRow);
-        return Results.Created($"/api{_apiSubDir}/{newRow.RequestId}", newRow);
+        return Results.Created($"/api{_apiSubDir}/{newRow.RequestId}", RequestDto.From(newRow));
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] E_Request updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] RequestSave save)
     {
+        E_Request updatedRow = save.ToEntity();
         if (updatedRow.RequestId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         var scope = await EmployeeScope.ForAsync(context, user);
         var stored = await RowOwners.Request(context, id);
@@ -134,14 +132,14 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         if (updatedRow.SY_RequestStatusTypeId != stored.StatusId
             && IsDecision(updatedRow.SY_RequestStatusTypeId)
             && !MayDecideOwn(user, stored.EmployeeId))
-            return Results.Forbid(); // a person cannot approve their own request
+            return ApiProblems.Forbidden("A person cannot approve, reject, reimburse or void their own request."); // a person cannot approve their own request
 
         // the status date moves only when the status does
         updatedRow.StatusDate = updatedRow.SY_RequestStatusTypeId != stored.StatusId ? DateTime.Now : stored.StatusDate;
 
         E_RequestRepo repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(postUpdate);
+        return Results.Ok(RequestDto.From(postUpdate));
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -155,8 +153,8 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

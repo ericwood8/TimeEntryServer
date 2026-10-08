@@ -66,7 +66,7 @@ public class HolidayApi<T> : BaseApi<T> where T : class
     private static async Task<IResult> GetByName([FromServices] TimeEntryContext context, string name)
     {
         if (name.IsNameBad())
-            return Results.BadRequest(); // 400 error if bad characters or empty
+            return ApiProblems.BadName(); // 400 error if bad characters or empty
 
         HolidayRepo repo = new(context);
         var rows = await repo.GetByName(name);
@@ -77,7 +77,7 @@ public class HolidayApi<T> : BaseApi<T> where T : class
     {
         newRow.Name = newRow.Name.Trim();
         if (newRow.Name.IsNameBad())
-            return Results.BadRequest();  // 400 error if bad characters or empty
+            return ApiProblems.BadName();  // 400 error if bad characters or empty
         // SPECIAL - duplicate names is fine on holidays
 
         HolidayRepo repo = new(context);
@@ -88,15 +88,15 @@ public class HolidayApi<T> : BaseApi<T> where T : class
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Holiday updatedRow)
     {
         if (updatedRow.HolidayId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         if (updatedRow.Name.IsNameBad())
-            return Results.BadRequest(); // 400 error if bad characters or empty
+            return ApiProblems.BadName(); // 400 error if bad characters or empty
         // SPECIAL - duplicate names is fine on holidays
 
         HolidayRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
-            return Results.NotFound(); // 404 error if there is no row with that id
+            return ApiProblems.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }
@@ -108,8 +108,8 @@ public class HolidayApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

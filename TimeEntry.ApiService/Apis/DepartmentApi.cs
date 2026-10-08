@@ -88,7 +88,7 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     private static async Task<IResult> GetByName([FromServices] TimeEntryContext context, string name)
     {
         if (name.IsNameBad())
-            return Results.BadRequest(); // 400 error if bad characters or empty
+            return ApiProblems.BadName(); // 400 error if bad characters or empty
 
         DepartmentRepo repo = new(context);
         var rows = await repo.GetByName(name);
@@ -99,14 +99,14 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     {
         newRow.Name = newRow.Name.Trim();
         if (newRow.Name.IsNameBad())
-            return Results.BadRequest();  // 400 error if bad characters or empty
+            return ApiProblems.BadName();  // 400 error if bad characters or empty
 
         DepartmentRepo repo = new(context);
         bool success = await repo.AddAsync(newRow);
         if (success)
             return Results.Created($"/api{_apiSubDir}/{newRow.DepartmentId}", newRow);
         else 
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
+            return ApiProblems.DuplicateName(); // 422 error if Duplicate Name
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Department updatedRow)
@@ -114,44 +114,55 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         if (updatedRow == null) 
             return Results.NotFound();
         if (updatedRow.DepartmentId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         updatedRow.Name = updatedRow.Name.Trim();
-
         if (updatedRow.Name.IsNameBad())
-            return Results.BadRequest(); // 400 error if bad characters or empty
+            return ApiProblems.BadName(); // 400 error if bad characters or empty
 
-        List<DepartmentTeam> preUpdateTeams = [];
-        if (updatedRow.Teams != null && updatedRow.Teams.Count > 0)
+        List<DepartmentTeam> incomingTeams = updatedRow.Teams ?? [];
+        foreach (var team in incomingTeams)
         {
-            preUpdateTeams = updatedRow.Teams;
-        }        
+            team.Name = team.Name.Trim();
+            if (team.Name.IsNameBad())
+                return ApiProblems.BadName(); // 400 error if a team name has bad characters or is empty
+        }
 
         DepartmentRepo repo = new(context);
-        if (!await repo.ExistsAsync(id))
-            return Results.NotFound(); // 404 error if there is no row with that id
-        var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        if (postUpdate == null)
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
+        Department? stored = await repo.GetByIdIncludeTeams(id);
+        if (stored == null)
+            return ApiProblems.NotFound(); // 404 error if there is no row with that id
+        if (updatedRow.IsActive && await repo.IsDupOnUpdateAsync(id, updatedRow.Name))
+            return ApiProblems.DuplicateName(); // 422 error if Duplicate Name
 
-        // ----- now fix the team(s) associated with the department ----
-        DepartmentTeamRepo teamRepo = new(context);
-        List<DepartmentTeam> postUpdateTeams = await teamRepo.GetListAsync(x => x.IsActive && x.DepartmentId.Equals(id));
+        // a team that is sent with an id must already belong to this department
+        Dictionary<int, DepartmentTeam> storedTeams = (stored.Teams ?? []).ToDictionary(t => t.DepartmentTeamId);
+        if (incomingTeams.Any(t => t.DepartmentTeamId != 0 && !storedTeams.ContainsKey(t.DepartmentTeamId)))
+            return ApiProblems.Invalid("A team in the list does not belong to this department.");
 
-        var teamsToDelete = postUpdateTeams?.Where(t => !preUpdateTeams!.Any(s => s.Name == t.Name)).ToList();
-        if (teamsToDelete!.Count > 0)
+        // teams left out of the list are removed, unless something (an employee, a leave restriction) still uses them
+        HashSet<int> keptIds = incomingTeams.Select(t => t.DepartmentTeamId).ToHashSet();
+        List<DepartmentTeam> teamsToRemove = storedTeams.Values.Where(t => t.IsActive && !keptIds.Contains(t.DepartmentTeamId)).ToList();
+        foreach (var team in teamsToRemove)
         {
-            await teamRepo.RemoveRangeAsync(teamsToDelete!);
+            if ((await context.SpCanDeleteAsync("DepartmentTeam", team.DepartmentTeamId)).Count > 0)
+                return ApiProblems.Unprocessable("A team that employees or leave restrictions still use cannot be removed."); // 422 error if a removed team is in use
         }
 
-        var adjustedRow = await repo.GetByIdIncludeTeams(id);
-        if (adjustedRow != null)
+        // one save: the department, the changed teams, the new teams and the removed teams succeed or fail together
+        context.Entry(stored).CurrentValues.SetValues(updatedRow);
+        foreach (var team in incomingTeams)
         {
-            adjustedRow.Teams = updatedRow.Teams;
-            await context.SaveChangesAsync();
+            team.DepartmentId = id;
+            if (team.DepartmentTeamId == 0)
+                stored.Teams!.Add(team);
+            else
+                context.Entry(storedTeams[team.DepartmentTeamId]).CurrentValues.SetValues(team);
         }
-        
-        return Results.Ok(postUpdate);
+        context.RemoveRange(teamsToRemove);
+        await context.SaveChangesAsync();
+
+        return Results.Ok(stored); // the saved department with its current teams
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
@@ -161,8 +172,8 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

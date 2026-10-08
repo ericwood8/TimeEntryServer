@@ -71,7 +71,7 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
     private static async Task<IResult> GetByName([FromServices] TimeEntryContext context, string name)
     {
         if (name.IsNameBad())
-            return Results.BadRequest(); // 400 error if bad characters or empty
+            return ApiProblems.BadName(); // 400 error if bad characters or empty
 
         TimeEntryUserRepo repo = new(context);
         var rows = await repo.GetByName(name);
@@ -82,11 +82,11 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
     {
         string name = (save.Name ?? "").Trim();
         if (name.IsNameBad())
-            return Results.BadRequest();  // 400 error if bad characters or empty
+            return ApiProblems.BadName();  // 400 error if bad characters or empty
         if (!PasswordService.IsAcceptable(save.Password) || string.IsNullOrWhiteSpace(save.Answer))
-            return Results.BadRequest(); // a new user needs a password of the minimum strength and a security answer
+            return ApiProblems.Invalid("A new user needs a password (at least 8 characters, with a letter and a digit) and a security answer."); // a new user needs a password of the minimum strength and a security answer
         if (!Enum.IsDefined(typeof(SY_Role), save.SY_RoleId))
-            return Results.BadRequest();
+            return ApiProblems.Invalid("That role does not exist.");
 
         TimeEntryUser newRow = new()
         {
@@ -110,28 +110,28 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         if (success)
             return Results.Created($"/api{_apiSubDir}/{newRow.TimeEntryUserId}", TimeEntryUserDto.From(newRow));
         else
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
+            return ApiProblems.DuplicateName(); // 422 error if Duplicate Name
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, [FromServices] PasswordService passwords, int id, [FromBody] TimeEntryUserSave save)
     {
         if (save.TimeEntryUserId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         string name = (save.Name ?? "").Trim();
         if (name.IsNameBad())
-            return Results.BadRequest(); // 400 error if bad characters or empty
+            return ApiProblems.BadName(); // 400 error if bad characters or empty
         if (!Enum.IsDefined(typeof(SY_Role), save.SY_RoleId))
-            return Results.BadRequest();
+            return ApiProblems.Invalid("That role does not exist.");
         if (!string.IsNullOrEmpty(save.Password) && !PasswordService.IsAcceptable(save.Password))
-            return Results.BadRequest();
+            return ApiProblems.Invalid("The password needs at least 8 characters, with a letter and a digit.");
 
         TimeEntryUserRepo repo = new(context);
         TimeEntryUser? row = await repo.GetByIdAsync(id);
         if (row == null)
-            return Results.NotFound(); // 404 error if there is no row with that id
+            return ApiProblems.NotFound(); // 404 error if there is no row with that id
         if (save.IsActive && await repo.IsDupOnUpdateAsync(id, name))
-            return Results.UnprocessableEntity(); // 422 error if another active user has that name
+            return ApiProblems.DuplicateName(); // 422 error if another active user has that name
 
         // only the listed columns are copied, so the stored Pword and Answer survive unless a new one is sent
         row.Name = name;
@@ -158,8 +158,8 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

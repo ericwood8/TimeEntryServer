@@ -16,14 +16,14 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         // Get all
         app.MapGet(apiSubDir, GetAllIncludingDetails)
        .WithName($"Get{plural}")
-       .Produces<IEnumerable<T>>()
+       .Produces<IEnumerable<ExpenseSheetDto>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
 
         // Get by ID
         app.MapGet(apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .Produces<T>()
+        .Produces<ExpenseSheetDto>()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -53,7 +53,7 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         int[] ids = scope.EmployeeIds;
         E_RequestExpenseSheetRepo repo = new(context);
         var rows = await repo.GetAllIncludingDetails(scope.All ? null : s => ids.Contains(s.EmployeeId));
-        return Ok(rows);
+        return Ok(rows.Select(ExpenseSheetDto.From));
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -63,11 +63,12 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         var row = await repo.GetByIdAsync(id);
         if (row == null)
             return Results.NotFound();
-        return scope.Deny(row.EmployeeId) ?? Results.Ok(row);
+        return scope.Deny(row.EmployeeId) ?? Results.Ok(ExpenseSheetDto.From(row));
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] E_RequestExpenseSheet newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] ExpenseSheetSave save)
     {
+        E_RequestExpenseSheet newRow = save.ToEntity();
         // whose expenses they are comes from the token; only Admin and Human Resources may enter a sheet for somebody else
         if (!user.CanManageAll())
         {
@@ -78,13 +79,14 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
 
         E_RequestExpenseSheetRepo repo = new(context);
         await repo.AddAsync(newRow);
-        return Results.Created($"/api{apiSubDir}/{newRow.RequestExpenseSheetId}", newRow);
+        return Results.Created($"/api{apiSubDir}/{newRow.RequestExpenseSheetId}", ExpenseSheetDto.From(newRow));
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] E_RequestExpenseSheet updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] ExpenseSheetSave save)
     {
+        E_RequestExpenseSheet updatedRow = save.ToEntity();
         if (updatedRow.RequestExpenseSheetId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         var scope = await EmployeeScope.ForAsync(context, user);
         int? owner = await RowOwners.ExpenseSheet(context, id);
@@ -94,7 +96,7 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
 
         E_RequestExpenseSheetRepo repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(postUpdate);
+        return Results.Ok(ExpenseSheetDto.From(postUpdate));
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -108,8 +110,8 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

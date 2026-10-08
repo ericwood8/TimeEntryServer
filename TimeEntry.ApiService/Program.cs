@@ -75,9 +75,16 @@ if (allowedOrigins.Length > 0)
         policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader()));
 }
 
+// errors leave the API as RFC 9457 problem documents (a message the UI can show), never as a stack trace or an empty body
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
+
+app.UseExceptionHandler(); // an unhandled exception (a database error, say) becomes a 500 problem
+app.UseStatusCodePages(); // a bare 400/401/403/404/422 gets a problem body
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -24,8 +24,8 @@ public class Response : BaseEntity
     #endregion Omitted
 
     // entities
-    public required Employee Manager { get; set; }
-    public required E_Request E_Request { get; set; }
+    public Employee? Manager { get; set; }
+    public E_Request? E_Request { get; set; }
 
     // enums -- worked out from ResponseTypeId. The table has no ResponseType column, so EF must not map one
     [NotMapped]

@@ -82,7 +82,7 @@ public class ProjectTaskApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     private static async Task<IResult> GetByName([FromServices] TimeEntryContext context, string name)
     {
         if (name.IsNameBad())
-            return Results.BadRequest(); // 400 error if bad characters or empty
+            return ApiProblems.BadName(); // 400 error if bad characters or empty
 
         NameActiveRepo<ProjectTask> repo = new(context);
         var rows = await repo.GetByName(name);
@@ -93,14 +93,14 @@ public class ProjectTaskApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     {
         newRow.Name = newRow.Name.Trim();
         if (newRow.Name.IsNameBad())
-            return Results.BadRequest();  // 400 error if bad characters or empty
+            return ApiProblems.BadName();  // 400 error if bad characters or empty
 
         ProjectTaskRepo repo = new(context);
         bool success = await repo.AddAsync(newRow);
         if (success)
             return Results.Created($"/api/projectTasks/{newRow.ProjectTaskId}", newRow);
         else
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name           
+            return ApiProblems.DuplicateName(); // 422 error if Duplicate Name           
     }
 
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] ProjectTask updatedRow)
@@ -108,18 +108,18 @@ public class ProjectTaskApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         if (updatedRow == null)
             return Results.NotFound();
         if (updatedRow.ProjectTaskId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         updatedRow.Name = updatedRow.Name.Trim();
         if (updatedRow.Name.IsNameBad())
-            return Results.BadRequest(); // 400 error if bad characters or empty
+            return ApiProblems.BadName(); // 400 error if bad characters or empty
 
         ProjectTaskRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
-            return Results.NotFound(); // 404 error if there is no row with that id
+            return ApiProblems.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         if (postUpdate == null)
-            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
+            return ApiProblems.DuplicateName(); // 422 error if Duplicate Name
 
         return Results.Ok(postUpdate);
     }
@@ -131,8 +131,8 @@ public class ProjectTaskApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

@@ -65,11 +65,11 @@ public class RestrictLeaveApi<T> : BaseApi<T> where T : class
     private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] RestrictLeave updatedRow)
     {
         if (updatedRow.RestrictLeaveId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         RestrictLeaveRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
-            return Results.NotFound(); // 404 error if there is no row with that id
+            return ApiProblems.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
         return Results.Ok(postUpdate);
     }
@@ -81,8 +81,8 @@ public class RestrictLeaveApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }

@@ -16,14 +16,14 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
         // Get all
         app.MapGet(apiSubDir, GetAll)
        .WithName($"Get{plural}")
-       .Produces<IEnumerable<T>>()
+       .Produces<IEnumerable<ExpenseDetailDto>>()
        .ProducesProblem(404)
        .ProducesProblem(500);
 
         // Get by ID
         app.MapGet(apiSubDir + "/{id:int}", GetById)
         .WithName($"Get{singular}ById")
-        .Produces<T>()
+        .Produces<ExpenseDetailDto>()
         .ProducesProblem(404)
         .ProducesProblem(500);
 
@@ -55,7 +55,7 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
         // a detail belongs to whoever owns its sheet
         var rows = await repo.GetAllOrderByDescending(c => c.ExpenseDate,
             scope.All ? null : d => context.E_RequestExpenseSheet.Any(s => s.RequestExpenseSheetId == d.E_RequestExpenseSheetId && ids.Contains(s.EmployeeId)));
-        return Ok(rows);
+        return Ok(rows.Select(ExpenseDetailDto.From));
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -67,28 +67,30 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
 
         E_RequestExpenseDetailRepo repo = new(context);
         var row = await repo.GetByIdAsync(id);
-        return row != null ? Results.Ok(row) : Results.NotFound();
+        return row != null ? Results.Ok(ExpenseDetailDto.From(row)) : Results.NotFound();
     }
 
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] E_RequestExpenseDetail newRow)
+    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] ExpenseDetailSave save)
     {
+        E_RequestExpenseDetail newRow = save.ToEntity();
         // a detail may only be added to an expense sheet the caller may use
         var scope = await EmployeeScope.ForAsync(context, user);
         int? sheetOwner = await RowOwners.ExpenseSheet(context, newRow.E_RequestExpenseSheetId);
         if (sheetOwner == null)
-            return Results.BadRequest(); // 400 error if the expense sheet does not exist
+            return ApiProblems.Invalid("There is no expense sheet with that id."); // 400 error if the expense sheet does not exist
         if (scope.Deny(sheetOwner) is { } denied)
             return denied;
 
         E_RequestExpenseDetailRepo repo = new(context);
         await repo.AddAsync(newRow);
-        return Results.Created($"/api/expenseDetails/{newRow.RequestExpenseDetailId}", newRow);
+        return Results.Created($"/api/expenseDetails/{newRow.RequestExpenseDetailId}", ExpenseDetailDto.From(newRow));
     }
 
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] E_RequestExpenseDetail updatedRow)
+    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] ExpenseDetailSave save)
     {
+        E_RequestExpenseDetail updatedRow = save.ToEntity();
         if (updatedRow.RequestExpenseDetailId != id)
-            return Results.BadRequest(); // 400 error if the id in the URL and the id in the body disagree
+            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
         var scope = await EmployeeScope.ForAsync(context, user);
         var owner = await RowOwners.ExpenseDetail(context, id);
@@ -98,7 +100,7 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
 
         E_RequestExpenseDetailRepo repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(postUpdate);
+        return Results.Ok(ExpenseDetailDto.From(postUpdate));
     }
 
     private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
@@ -113,8 +115,8 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
         if (successNum == 0)
             return Results.Ok();
         else if (successNum == -1)
-            return Results.NotFound(); // cannot delete because does not exist
+            return ApiProblems.NotFound(); // cannot delete because does not exist
         else
-            return Results.BadRequest(); // cannot delete because "in use"
+            return ApiProblems.InUse(); // cannot delete because "in use"
     }
 }
