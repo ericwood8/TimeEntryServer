@@ -9,6 +9,7 @@ public static class StringExtensionMethods
 
     public static bool HasSpecialChars(this string s)
     {
-        return s.Any(ch => !char.IsLetterOrDigit(ch) && ch != ' ');
+        // the same rule as the Name annotation on the entities: letters, digits, spaces, apostrophes and hyphens
+        return s.Any(ch => !char.IsLetterOrDigit(ch) && ch != ' ' && ch != '\'' && ch != '-');
     }
 }

@@ -5,14 +5,13 @@ namespace TimeEntry.Common.Repositories;
 public interface IGenericRepo<T> where T : BaseEntity
 {
     //--------- GET ROW -----------------
-    public T GetById(int id);
     public Task<T?> GetByIdAsync(int id);
     public Task<bool> ExistsAsync(int id);
-    public T Get(Expression<Func<T, bool>> predicate);
     public Task<T?> GetAsync(Expression<Func<T, bool>> predicate);
 
     //--------- GET ROWS -----------------
     public Task<List<T>> GetAll();
+    public Task<List<T>> GetListAsync(Expression<Func<T, bool>> predicate);
     //public Task<List<T>> GetAllAsync();
     public Task<List<T>> GetAllOrderByDescending(Expression<Func<T, DateTime>> predicate, Expression<Func<T, bool>>? where = null);
 
@@ -28,6 +27,5 @@ public interface IGenericRepo<T> where T : BaseEntity
     public Task RemoveRangeAsync(List<T> rowsToDelete);
 
     // ------- Special - such as count -------------------
-    public int Count();
     public Task<int> CountAsync();
 }

@@ -28,13 +28,13 @@ public static class RowOwners
 
     public static Task<RequestOwner?> Request(TimeEntryContext context, int id) =>
         context.E_Request.AsNoTracking().Where(r => r.RequestId == id)
-            .Select(r => new RequestOwner(r.EmployeeId, r.SY_RequestStatusTypeId)).FirstOrDefaultAsync();
+            .Select(r => new RequestOwner(r.EmployeeId, r.SY_RequestStatusTypeId, r.WhenRequested, r.StatusDate)).FirstOrDefaultAsync();
 
     public static Task<DonationOwners?> Donation(TimeEntryContext context, int id) =>
         context.E_DonateLeave.AsNoTracking().Where(d => d.DonateLeaveId == id)
             .Select(d => new DonationOwners(d.DonateFrom_EmployeeId, d.DonateTo_EmployeeId)).FirstOrDefaultAsync();
 }
 
-public record RequestOwner(int EmployeeId, int StatusId);
+public record RequestOwner(int EmployeeId, int StatusId, DateTime WhenRequested, DateTime? StatusDate);
 
 public record DonationOwners(int FromEmployeeId, int ToEmployeeId);

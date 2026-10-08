@@ -4,11 +4,10 @@ using TimeEntry.Common.Models;
 namespace TimeEntry.Common.Repositories;
 
 /// <summary> Repository for any generic table </summary>
-public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
+public class GenericRepo<T> : IGenericRepo<T> where T : BaseEntity
 {
     protected readonly TimeEntryContext _context;
     protected readonly DbSet<T> _dbSet;
-    private bool _disposed = false;
 
     public GenericRepo(TimeEntryContext context)
     {
@@ -17,11 +16,6 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
     }
 
     //--------- GET ROW -----------------
-
-    public T GetById(int id)
-    {
-        return _dbSet.Find(id)!;
-    }
 
     /// <summary> Returns the row, or null when there is no row with that id. </summary>
     public async Task<T?> GetByIdAsync(int id)
@@ -36,11 +30,6 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
         return await _dbSet.AsNoTracking().AnyAsync(e => EF.Property<int>(e, keyName) == id);
     }
 
-    public T Get(Expression<Func<T, bool>> predicate)
-    {
-        return _dbSet.FirstOrDefault(predicate)!;
-    }
-
     public async Task<T?> GetAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.FirstOrDefaultAsync(predicate);
@@ -48,15 +37,10 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
 
     //--------- GET ROWS -----------------
 
-    public List<T> GetList(Expression<Func<T, bool>> predicate)
+    public async Task<List<T>> GetListAsync(Expression<Func<T, bool>> predicate)
     {
-        return _dbSet.Where(predicate).ToList();
+        return await _dbSet.Where(predicate).ToListAsync();
     }
-
-    //public async Task<IEnumerable<T>> GetListAsync(Expression<Func<T, bool>> predicate)
-    //{
-    //    return await Task.Run(() => _context.Set<T>().Where<T>(predicate));
-    //}
 
     public async Task<List<T>> GetAll()
     {
@@ -107,7 +91,7 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
     // ------- Delete -------------------
     public async Task<int> DeleteAsync(string deleteFromTable, int deleteId)
     {
-        var rowToDelete = GetById(deleteId);
+        var rowToDelete = await GetByIdAsync(deleteId);
         if (rowToDelete == null)
             return -1;
 
@@ -126,32 +110,9 @@ public class GenericRepo<T> : IGenericRepo<T>, IDisposable where T : BaseEntity
     }
 
     // ------- Special - such as count -------------------
-    public int Count()
-    {
-        return _dbSet.Count();
-    }
-
     public async Task<int> CountAsync()
     {
         return await _dbSet.CountAsync();
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposed)
-        {
-            if (disposing)
-            {
-                _context.Dispose();
-            }
-        }
-        _disposed = true;
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     #region Privates

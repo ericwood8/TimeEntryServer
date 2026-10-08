@@ -128,9 +128,6 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         if (updatedRow.Name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
 
-        //if (departmentRepo.IsDupOnUpdate(id, updatedRow.Name))
-        //   return Results.UnprocessableEntity(); // 422 error if Duplicate Name
-
         List<DepartmentTeam> preUpdateTeams = [];
         if (updatedRow.Teams != null && updatedRow.Teams.Count > 0)
         {
@@ -141,10 +138,12 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
+        if (postUpdate == null)
+            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 
         // ----- now fix the team(s) associated with the department ----
         DepartmentTeamRepo teamRepo = new(context);
-        List<DepartmentTeam> postUpdateTeams = teamRepo.GetList(x => x.IsActive && x.DepartmentId.Equals(id));
+        List<DepartmentTeam> postUpdateTeams = await teamRepo.GetListAsync(x => x.IsActive && x.DepartmentId.Equals(id));
 
         var teamsToDelete = postUpdateTeams?.Where(t => !preUpdateTeams!.Any(s => s.Name == t.Name)).ToList();
         if (teamsToDelete!.Count > 0)

@@ -4,12 +4,10 @@ using TimeEntry.Common.Models;
 namespace TimeEntry.Common.Repositories;
 
 /// <summary> Generic Repository + GetByName() + IsDup() + different GetAll() </summary>
-public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseNameActiveEntity
+public class NameActiveRepo<T> : INameActiveRepo<T> where T : BaseNameActiveEntity
 {
     protected readonly TimeEntryContext _context;
     protected readonly DbSet<T> _dbSet;
-
-    private bool _disposed = false;
 
     public NameActiveRepo(TimeEntryContext context)
     {
@@ -18,11 +16,6 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
     }
 
     //--------- GET ROW -----------------
-
-    public T GetById(int id)
-    {
-        return _dbSet.Find(id)!;
-    }
 
     /// <summary> Returns the row, or null when there is no row with that id. </summary>
     public async Task<T?> GetByIdAsync(int id)
@@ -37,11 +30,6 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
         return await _dbSet.AsNoTracking().AnyAsync(e => EF.Property<int>(e, keyName) == id);
     }
 
-    public T Get(Expression<Func<T, bool>> predicate)
-    {
-        return _dbSet.FirstOrDefault(predicate)!;
-    }
-
     public async Task<T?> GetAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.FirstOrDefaultAsync(predicate);
@@ -49,9 +37,9 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
 
     //--------- GET ROWS -----------------
 
-    public List<T> GetList(Expression<Func<T, bool>> predicate)
+    public async Task<List<T>> GetListAsync(Expression<Func<T, bool>> predicate)
     {
-        return _dbSet.Where(predicate).ToList();
+        return await _dbSet.Where(predicate).ToListAsync();
     }
 
     // **** special ****
@@ -75,7 +63,8 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
 
     public async Task<bool> AddAsync(T newRow)
     {
-        if (IsDupOnCreate(newRow.Name))
+        newRow.Name = newRow.Name.Trim();
+        if (await IsDupOnCreateAsync(newRow.Name))
         {
             return false;
         }
@@ -92,12 +81,14 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
     }
 
     // ------- Update -------------------
-    public async Task<T> UpdateAsync(int id, T rowToUpdate)
+    /// <summary> Returns the saved row, or null when another active row already has that name. </summary>
+    public async Task<T?> UpdateAsync(int id, T rowToUpdate)
     {
-        //if (IsDupOnUpdate(id, rowToUpdate.Name))
-        //{
-        //    return default(T); 
-        //}
+        rowToUpdate.Name = rowToUpdate.Name.Trim();
+        if (rowToUpdate.IsActive && await IsDupOnUpdateAsync(id, rowToUpdate.Name))
+        {
+            return null;
+        }
 
         _context.Entry(rowToUpdate).State = EntityState.Modified;
         await _context.SaveChangesAsync();
@@ -107,7 +98,7 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
     // ------- Delete -------------------
     public async Task<int> DeleteAsync(string deleteFromTable, int deleteId)
     {
-        var rowToDelete = GetById(deleteId);
+        var rowToDelete = await GetByIdAsync(deleteId);
         if (rowToDelete == null)
             return -1;
 
@@ -126,34 +117,11 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
     }
 
     // ------- Special - such as count or IsDup() -------------------
-    public int Count()
-    {
-        return _dbSet.Count();
-    }
-
     public async Task<int> CountAsync()
     {
         return await _dbSet.CountAsync();
     }
 
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposed)
-        {
-            if (disposing)
-            {
-                //__context.Dispose();
-            }
-        }
-        _disposed = true;
-    }
-
-    public void Dispose()
-    {
-        //Dispose(__context,true);
-        GC.SuppressFinalize(this);
-    }
 
     #region Privates
     /// <summary> Returns all the places that row is used in other tables. </summary>
@@ -165,23 +133,22 @@ public class NameActiveRepo<T> : INameActiveRepo<T>, IDisposable where T : BaseN
         return await _context.SpCanDeleteAsync(deleteFromTable, deleteId);
     }
 
-    // **** special ****
-    private bool IsDupOnCreate(string newName)
+    // Name rule (create and update alike): an active row with the same name, ignoring surrounding spaces; upper/lower case follows
+    // the database collation (case-insensitive on the default SQL Server one).
+    private string KeyName => _context.Model.FindEntityType(typeof(T))!.FindPrimaryKey()!.Properties[0].Name;
+
+    public async Task<bool> IsDupOnCreateAsync(string newName)
     {
-        var uniqueRow = _dbSet.FirstOrDefault(d => d.Name.Equals(newName.Trim()) && d.IsActive);
-        return uniqueRow != null;  // already exists 
+        string name = newName.Trim();
+        return await _dbSet.AsNoTracking().AnyAsync(d => d.Name == name && d.IsActive);
     }
 
-    // **** special ****
-    private bool IsDupOnUpdate(int preChangeId, string newName)
+    /// <summary> True when a different active row already has that name. The row being renamed never counts against itself. </summary>
+    public async Task<bool> IsDupOnUpdateAsync(int id, string newName)
     {
-        // extra check on Update
-        var preChangeRow = _dbSet.Find(preChangeId)!;
-        if (preChangeRow.Name.Equals(newName, StringComparison.OrdinalIgnoreCase))
-            return false; // don't check for dup if same name (because of course it will seem to be duplicate)
-
-        var uniqueRow = _dbSet.FirstOrDefault(d => d.Name.Equals(newName.Trim()) && d.IsActive);
-        return uniqueRow != null;  // already exists 
+        string name = newName.Trim();
+        string keyName = KeyName;
+        return await _dbSet.AsNoTracking().AnyAsync(d => d.Name == name && d.IsActive && EF.Property<int>(d, keyName) != id);
     }
     #endregion
 }

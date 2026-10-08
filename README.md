@@ -25,7 +25,7 @@ The Time Entry Server repo piece uses _C#_, _.NET 9_, has _minimal APIs_, uses _
 to connect to the _MS SQL Server_ database. 
 
 IMPORTANT - 1) Run the TimeEntryServer solution in Visual Studio. This drives everything else.
-  2) Change the "SQL Connection String" in 3 spots so it will work in your environment (see DB repo for details).
+  2) Point the API at your SQL Server. The one connection string is `ConnectionStrings:TimeEntryDb` (default in `TimeEntry.ApiService/appsettings.json` is the local server). Override it with user-secrets or the `ConnectionStrings__TimeEntryDb` environment variable (see DB repo for details).
 
 ![ClickHere](https://github.com/user-attachments/assets/dff45eef-31ef-4e78-9416-44e5dd0db30b)
 ![Employees](https://github.com/user-attachments/assets/9d1aade3-7e04-4732-ad37-224c5a1fbb1e)
@@ -65,8 +65,8 @@ Before beginning, make sure you have the following tools installed:
     - **The free Express version is fine**
       
 4. Communication with database
-   This solution requires communicating to a database.  Change the "SQL Connection String" in 3 spots so it will work in your environment.
-Search for "ConnectionString" and fix all of them.
+   This solution requires communicating to a database. There is one connection string, `ConnectionStrings:TimeEntryDb`.
+   Override it for your machine with user-secrets (`dotnet user-secrets set ConnectionStrings:TimeEntryDb "..." --project TimeEntry.ApiService`) or the `ConnectionStrings__TimeEntryDb` environment variable. `dotnet ef` reads the same environment variable.
 
 ---
 

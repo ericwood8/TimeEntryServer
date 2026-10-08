@@ -4,7 +4,7 @@ namespace TimeEntry.Tests;
 public class WebTests
 {
     [TestMethod]
-    public async Task GetWebResourceRootReturnsOkStatusCode()
+    public async Task ApiHealthReturnsOkStatusCode()
     {
         // Arrange
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.TimeEntry_AppHost>();
@@ -18,9 +18,10 @@ public class WebTests
         await app.StartAsync();
 
         // Act
-        var httpClient = app.CreateHttpClient("webfrontend");
-        await resourceNotificationService.WaitForResourceAsync("webfrontend", KnownResourceStates.Running).WaitAsync(TimeSpan.FromSeconds(30));
-        var response = await httpClient.GetAsync("/");
+        // "timeentryapi" is the API project in TimeEntry.AppHost (needs the .NET Aspire host to run; SQL Server is not needed for /health)
+        var httpClient = app.CreateHttpClient("timeentryapi");
+        await resourceNotificationService.WaitForResourceAsync("timeentryapi", KnownResourceStates.Running).WaitAsync(TimeSpan.FromSeconds(60));
+        var response = await httpClient.GetAsync("/health");
 
         // Assert
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);

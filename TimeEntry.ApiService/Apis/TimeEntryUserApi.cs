@@ -136,6 +136,8 @@ public class TimeEntryUserApi<T> : BaseApi<T> where T : class
         TimeEntryUser? row = await repo.GetByIdAsync(id);
         if (row == null)
             return Results.NotFound(); // 404 error if there is no row with that id
+        if (save.IsActive && await repo.IsDupOnUpdateAsync(id, name))
+            return Results.UnprocessableEntity(); // 422 error if another active user has that name
 
         // only the listed columns are copied, so the stored Pword and Answer survive unless a new one is sent
         row.Name = name;

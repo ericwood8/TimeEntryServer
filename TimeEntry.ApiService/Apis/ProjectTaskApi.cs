@@ -122,13 +122,12 @@ public class ProjectTaskApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         if (updatedRow.Name.IsNameBad())
             return Results.BadRequest(); // 400 error if bad characters or empty
 
-        //if (taskRepo.IsDupOnUpdate(id, updatedRow.Name))
-        //    return Results.UnprocessableEntity(); // 422 error if Duplicate Name 
-
         ProjectTaskRepo repo = new(context);
         if (!await repo.ExistsAsync(id))
             return Results.NotFound(); // 404 error if there is no row with that id
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
+        if (postUpdate == null)
+            return Results.UnprocessableEntity(); // 422 error if Duplicate Name
 
         return Results.Ok(postUpdate);
     }

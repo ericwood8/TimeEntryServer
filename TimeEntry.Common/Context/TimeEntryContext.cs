@@ -35,27 +35,6 @@ namespace TimeEntry.Common.Context
         public DbSet<TimeEntryUser> TimeEntryUser => Set<TimeEntryUser>();
 
 
-        /// <summary> Required to handle applying Configuration where missing </summary>
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                IConfigurationRoot configuration = new ConfigurationBuilder()
-                   .SetBasePath(Directory.GetCurrentDirectory())
-                   .AddJsonFile("appsettings.json")
-                   .Build();
-                var connectionString = configuration.GetConnectionString("DbConnectionString");
-                try
-                {
-                    optionsBuilder.UseSqlServer(connectionString);
-                }
-                catch (Exception ex) 
-                {
-                    throw new Exception("Unable to establish connection OR no attached database.  " + ex.Message); 
-                }
-            }
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

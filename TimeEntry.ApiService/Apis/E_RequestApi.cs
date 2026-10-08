@@ -134,16 +134,15 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         if (scope.Deny(stored?.EmployeeId) is { } denied)
             return denied; // 404 if there is no row with that id, 403 if it is not the caller's
         updatedRow.EmployeeId = stored!.EmployeeId; // the request cannot be handed to someone else
+        updatedRow.WhenRequested = stored.WhenRequested; // an edit does not change when it was first asked
 
         if (updatedRow.SY_RequestStatusTypeId != stored.StatusId
             && IsDecision(updatedRow.SY_RequestStatusTypeId)
             && !MayDecideOwn(user, stored.EmployeeId))
             return Results.Forbid(); // a person cannot approve their own request
 
-        //if (rowToUpdate.SY_RequestStatusTypeId != updatedRow.SY_RequestStatusTypeId)
-        //{
-        //    rowToUpdate.StatusDate = DateTime.Now;
-        //}
+        // the status date moves only when the status does
+        updatedRow.StatusDate = updatedRow.SY_RequestStatusTypeId != stored.StatusId ? DateTime.Now : stored.StatusDate;
 
         E_RequestRepo repo = new(context);
         var postUpdate = await repo.UpdateAsync(id, updatedRow);
