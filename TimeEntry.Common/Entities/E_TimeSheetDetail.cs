@@ -73,5 +73,5 @@ public class E_TimeSheetDetail : BaseEntity
     [Display(Order = -1, Name = "Notes", Description = "Notes")]
     [StringLength(200)]
     [DataType(DataType.MultilineText)]
-    public string Notes { get; set; } = "";
+    public string? Notes { get; set; }
 }

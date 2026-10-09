@@ -30,7 +30,7 @@ public record TimeSheetDetailSave(
     {
         TimeSheetDetailId = TimeSheetDetailId, E_TimeSheetId = E_TimeSheetId, ProjectId = ProjectId, ProjectTaskId = ProjectTaskId,
         SundayHours = SundayHours, MondayHours = MondayHours, TuesdayHours = TuesdayHours, WednesdayHours = WednesdayHours,
-        ThursdayHours = ThursdayHours, FridayHours = FridayHours, SaturdayHours = SaturdayHours, Notes = Notes ?? "",
+        ThursdayHours = ThursdayHours, FridayHours = FridayHours, SaturdayHours = SaturdayHours, Notes = Notes,
     };
 }
 

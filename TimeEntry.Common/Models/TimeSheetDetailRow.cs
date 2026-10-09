@@ -4,4 +4,4 @@ namespace TimeEntry.Common.Models;
 public record TimeSheetDetailRow(
     int TimeSheetDetailId, int E_TimeSheetId, int ProjectId, string ProjectName, int ProjectTaskId, string ProjectTaskName,
     decimal SundayHours, decimal MondayHours, decimal TuesdayHours, decimal WednesdayHours,
-    decimal ThursdayHours, decimal FridayHours, decimal SaturdayHours, string Notes);
+    decimal ThursdayHours, decimal FridayHours, decimal SaturdayHours, string? Notes);
