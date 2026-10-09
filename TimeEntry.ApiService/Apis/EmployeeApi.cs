@@ -43,6 +43,12 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         .ProducesProblem(404)
         .ProducesProblem(500);
 
+        // Lookup: just the id and name of the active employees, for drop-downs and the name columns of the grids (E12). A literal segment wins over {name}.
+        app.MapGet(apiSubDir + "/lookup", GetLookup)
+        .WithName($"Get{plural}Lookup")
+        .Produces<List<EmployeeLookup>>()
+        .ProducesProblem(500);
+
         // Get by Name
         app.MapGet(apiSubDir + "/{name}", GetByName)
         .WithName($"Get{singular}ByName")
@@ -55,6 +61,17 @@ public class EmployeeApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     {
         EmployeeRepo repo = new(context);
         var rows = await repo.GetAllIncludeDropdowns();
+        return Ok(rows);
+    }
+
+    /// <summary> The active employees as id and name only: a Select of two columns, so SQL reads two columns and no manager, department or team is joined. </summary>
+    private static async Task<IResult> GetLookup([FromServices] TimeEntryContext context)
+    {
+        var rows = await context.Employee.AsNoTracking()
+            .Where(e => e.IsActive)
+            .OrderBy(e => e.Name).ThenBy(e => e.EmployeeId)
+            .Select(e => new EmployeeLookup(e.EmployeeId, e.Name))
+            .ToListAsync();
         return Ok(rows);
     }
 
