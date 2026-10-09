@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 //builder.Services.AddHealthChecks().AddDbContextCheck<TimeEntryContext>();
-builder.AddSqlServerDbContext<TimeEntryContext>("TimeEntryDb");
+builder.AddSqlServerDbContext<TimeEntryContext>("TimeEntryDb", configureDbContextOptions: options => options.AddInterceptors(new TimeEntry.ApiService.Data.RowGoalInterceptor()));   // the interceptor: Data/RowGoalInterceptor.cs
 
 // ----- who may call: a signed-in user, proven by a token from /auth/login -----
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));

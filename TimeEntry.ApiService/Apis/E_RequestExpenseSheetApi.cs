@@ -17,6 +17,8 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         app.MapGet(apiSubDir, GetAllIncludingDetails)
        .WithName($"Get{plural}")
        .Produces<IEnumerable<ExpenseSheetDto>>()
+       .Produces<PaginatedItems<ExpenseSheetDto>>()
+       .ProducesProblem(400)
        .ProducesProblem(404)
        .ProducesProblem(500);
 
@@ -47,13 +49,20 @@ public class E_RequestExpenseSheetApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAllIncludingDetails([FromServices] TimeEntryContext context, ClaimsPrincipal user)
+    private static readonly SortMap<E_RequestExpenseSheet> sorts = new SortMap<E_RequestExpenseSheet>()
+        .Add("requestExpenseSheetId", s => s.RequestExpenseSheetId).Add("employeeId", s => s.EmployeeId).Add("employee", s => s.Employee!.Name)
+        .Add("projectId", s => s.ProjectId).Add("notes", s => s.Notes);
+
+    /// <summary> The whole list with each sheet's details, or (with pageIndex / pageSize) one page of it; sort and search apply to both. See <see cref="ListQuery"/>. </summary>
+    private static async Task<IResult> GetAllIncludingDetails([FromServices] TimeEntryContext context, ClaimsPrincipal user, [AsParameters] ListQuery query)
     {
         var scope = await EmployeeScope.ForAsync(context, user);
         int[] ids = scope.EmployeeIds;
-        E_RequestExpenseSheetRepo repo = new(context);
-        var rows = await repo.GetAllIncludingDetails(scope.All ? null : s => ids.Contains(s.EmployeeId));
-        return Ok(rows.Select(ExpenseSheetDto.From));
+        int[] named = await context.EmployeeIdsNamedAsync(query);
+        IQueryable<E_RequestExpenseSheet> rows = scope.All ? context.E_RequestExpenseSheet : context.E_RequestExpenseSheet.Where(s => ids.Contains(s.EmployeeId));
+        // the page is taken from the sheets; each sheet on it brings its details
+        return await rows.ToResultAsync(query, sorts, "requestExpenseSheetId:desc", s => s.RequestExpenseSheetId,
+            text => s => (s.Notes != null && s.Notes.Contains(text)) || EF.Constant(named).Contains(s.EmployeeId), ExpenseSheetDto.From, q => q.Include(s => s.ExpenseDetails));
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)

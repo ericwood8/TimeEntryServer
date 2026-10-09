@@ -17,6 +17,8 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
         app.MapGet(apiSubDir, GetAll)
        .WithName($"Get{plural}")
        .Produces<IEnumerable<ExpenseDetailDto>>()
+       .Produces<PaginatedItems<ExpenseDetailDto>>()
+       .ProducesProblem(400)
        .ProducesProblem(404)
        .ProducesProblem(500);
 
@@ -47,15 +49,20 @@ public class E_RequestExpenseDetailApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user)
+    private static readonly SortMap<E_RequestExpenseDetail> sorts = new SortMap<E_RequestExpenseDetail>()
+        .Add("expenseDate", d => d.ExpenseDate).Add("requestExpenseDetailId", d => d.RequestExpenseDetailId).Add("sheet", d => d.E_RequestExpenseSheetId)
+        .Add("expenseType", d => d.ExpenseTypeId).Add("amount", d => d.ReimbursableAmount).Add("vendor", d => d.VendorName);
+
+    /// <summary> The whole list, or (with pageIndex / pageSize) one page of it; sort and search apply to both. See <see cref="ListQuery"/>. </summary>
+    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user, [AsParameters] ListQuery query)
     {
         var scope = await EmployeeScope.ForAsync(context, user);
         int[] ids = scope.EmployeeIds;
-        E_RequestExpenseDetailRepo repo = new(context);
         // a detail belongs to whoever owns its sheet
-        var rows = await repo.GetAllOrderByDescending(c => c.ExpenseDate,
-            scope.All ? null : d => context.E_RequestExpenseSheet.Any(s => s.RequestExpenseSheetId == d.E_RequestExpenseSheetId && ids.Contains(s.EmployeeId)));
-        return Ok(rows.Select(ExpenseDetailDto.From));
+        IQueryable<E_RequestExpenseDetail> rows = scope.All ? context.E_RequestExpenseDetail
+            : context.E_RequestExpenseDetail.Where(d => context.E_RequestExpenseSheet.Any(s => s.RequestExpenseSheetId == d.E_RequestExpenseSheetId && ids.Contains(s.EmployeeId)));
+        return await rows.ToResultAsync(query, sorts, "expenseDate:desc", d => d.RequestExpenseDetailId,
+            text => d => (d.VendorName != null && d.VendorName.Contains(text)) || (d.Notes != null && d.Notes.Contains(text)), ExpenseDetailDto.From);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)

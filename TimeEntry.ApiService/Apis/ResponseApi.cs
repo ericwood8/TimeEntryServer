@@ -12,6 +12,8 @@ public class ResponseApi<T> : BaseApi<T> where T : class
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
        .Produces<IEnumerable<ResponseDto>>()
+       .Produces<PaginatedItems<ResponseDto>>()
+       .ProducesProblem(400)
        .ProducesProblem(404)
        .ProducesProblem(500);
 
@@ -41,12 +43,13 @@ public class ResponseApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
-    {
-        ResponseRepo repo = new(context);
-        var rows = await repo.GetAllOrderByDescending(c => c.WhenResponded);
-        return Ok(rows.Select(ResponseDto.From));
-    }
+    private static readonly SortMap<Response> sorts = new SortMap<Response>()
+        .Add("whenResponded", r => r.WhenResponded).Add("responseId", r => r.ResponseId).Add("request", r => r.E_RequestId)
+        .Add("manager", r => r.ManagerId).Add("responseType", r => r.ResponseTypeId);
+
+    /// <summary> The whole list, or (with pageIndex / pageSize) one page of it; sort applies to both. See <see cref="ListQuery"/>. </summary>
+    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, [AsParameters] ListQuery query) =>
+        await context.Response.ToResultAsync(query, sorts, "whenResponded:desc", r => r.ResponseId, null, ResponseDto.From);
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
     {

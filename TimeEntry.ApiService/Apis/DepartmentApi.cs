@@ -75,7 +75,7 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
     //        .Take(_pageSize)
     //        .ToListAsync();
 
-    //    return Ok(new PaginatedItems<Department>(pageIndex, totalItems, itemsOnPage));
+    //    return Ok(new PaginatedItems<Department>(pageIndex, pageSize, totalItems, itemsOnPage));
     //}
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)

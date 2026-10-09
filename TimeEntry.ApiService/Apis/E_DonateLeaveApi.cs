@@ -14,6 +14,8 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
        .Produces<IEnumerable<DonateLeaveDto>>()
+       .Produces<PaginatedItems<DonateLeaveDto>>()
+       .ProducesProblem(400)
        .ProducesProblem(404)
        .ProducesProblem(500);
 
@@ -43,15 +45,20 @@ public class E_DonateLeaveApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user)
+    private static readonly SortMap<E_DonateLeave> sorts = new SortMap<E_DonateLeave>()
+        .Add("whenDonated", d => d.WhenDonated).Add("donateLeaveId", d => d.DonateLeaveId).Add("hoursDonated", d => d.HoursDonated)
+        .Add("from", d => d.DonateFrom_EmployeeId).Add("to", d => d.DonateTo_EmployeeId).Add("note", d => d.Note);
+
+    /// <summary> The whole list, or (with pageIndex / pageSize) one page of it; sort and search apply to both. See <see cref="ListQuery"/>. </summary>
+    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user, [AsParameters] ListQuery query)
     {
         // a donation is visible to whoever gave and whoever received
         var scope = await EmployeeScope.ForAsync(context, user);
         int[] ids = scope.EmployeeIds;
-        E_DonateLeaveRepo repo = new(context);
-        var rows = await repo.GetAllOrderByDescending(c => c.WhenDonated,
-            scope.All ? null : d => ids.Contains(d.DonateFrom_EmployeeId) || ids.Contains(d.DonateTo_EmployeeId));
-        return Ok(rows.Select(DonateLeaveDto.From));
+        IQueryable<E_DonateLeave> rows = scope.All ? context.E_DonateLeave
+            : context.E_DonateLeave.Where(d => ids.Contains(d.DonateFrom_EmployeeId) || ids.Contains(d.DonateTo_EmployeeId));
+        return await rows.ToResultAsync(query, sorts, "whenDonated:desc", d => d.DonateLeaveId,
+            text => d => d.Note != null && d.Note.Contains(text), DonateLeaveDto.From);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)

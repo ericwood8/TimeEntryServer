@@ -14,6 +14,8 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
        .Produces<IEnumerable<TimeSheetDto>>()
+       .Produces<PaginatedItems<TimeSheetDto>>()
+       .ProducesProblem(400)
        .ProducesProblem(404)
        .ProducesProblem(500);
 
@@ -43,13 +45,19 @@ public class E_TimeSheetApi<T> : BaseApi<T> where T : class
         .ProducesProblem(500);
     }
 
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user)
+    private static readonly SortMap<E_TimeSheet> sorts = new SortMap<E_TimeSheet>()
+        .Add("whenEntered", t => t.WhenEntered).Add("timeSheetId", t => t.TimeSheetId).Add("employeeId", t => t.EmployeeId)
+        .Add("employee", t => t.Employee!.Name).Add("notes", t => t.Notes);
+
+    /// <summary> The whole list, or (with pageIndex / pageSize) one page of it; sort and search apply to both. See <see cref="ListQuery"/>. </summary>
+    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user, [AsParameters] ListQuery query)
     {
         var scope = await EmployeeScope.ForAsync(context, user);
         int[] ids = scope.EmployeeIds;
-        E_TimeSheetRepo repo = new(context);
-        var rows = await repo.GetAllOrderByDescending(c => c.WhenEntered, scope.All ? null : t => ids.Contains(t.EmployeeId));
-        return Ok(rows.Select(TimeSheetDto.From));
+        int[] named = await context.EmployeeIdsNamedAsync(query);
+        IQueryable<E_TimeSheet> rows = scope.All ? context.E_TimeSheet : context.E_TimeSheet.Where(t => ids.Contains(t.EmployeeId));
+        return await rows.ToResultAsync(query, sorts, "whenEntered:desc", t => t.TimeSheetId,
+            text => t => (t.Notes != null && t.Notes.Contains(text)) || EF.Constant(named).Contains(t.EmployeeId), TimeSheetDto.From);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)

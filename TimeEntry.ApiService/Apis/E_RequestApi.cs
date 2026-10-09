@@ -16,6 +16,8 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
         app.MapGet(_apiSubDir, GetAll)
        .WithName($"Get{plural}")
        .Produces<IEnumerable<RequestDto>>()
+       .Produces<PaginatedItems<RequestDto>>()
+       .ProducesProblem(400)
        .ProducesProblem(404)
        .ProducesProblem(500);
 
@@ -54,13 +56,20 @@ public class E_RequestApi<T> : BaseApi<T> where T : class
     private static bool MayDecideOwn(ClaimsPrincipal user, int ownerEmployeeId) =>
         user.CanManageAll() || user.EmployeeId() != ownerEmployeeId;
 
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user)
+    private static readonly SortMap<E_Request> sorts = new SortMap<E_Request>()
+        .Add("whenRequested", r => r.WhenRequested).Add("requestId", r => r.RequestId).Add("employeeId", r => r.EmployeeId)
+        .Add("employee", r => r.Employee!.Name).Add("status", r => r.SY_RequestStatusTypeId).Add("leaveStart", r => r.LeaveStart)
+        .Add("leaveEnd", r => r.LeaveEnd).Add("statusDate", r => r.StatusDate).Add("reason", r => r.Reason);
+
+    /// <summary> The whole list, or (with pageIndex / pageSize) one page of it; sort and search apply to both. See <see cref="ListQuery"/>. </summary>
+    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user, [AsParameters] ListQuery query)
     {
         var scope = await EmployeeScope.ForAsync(context, user);
         int[] ids = scope.EmployeeIds;
-        E_RequestRepo repo = new(context);
-        var rows = await repo.GetAllOrderByDescending(c => c.WhenRequested, scope.All ? null : r => ids.Contains(r.EmployeeId));
-        return Ok(rows.Select(RequestDto.From));
+        int[] named = await context.EmployeeIdsNamedAsync(query);
+        IQueryable<E_Request> rows = scope.All ? context.E_Request : context.E_Request.Where(r => ids.Contains(r.EmployeeId));
+        return await rows.ToResultAsync(query, sorts, "whenRequested:desc", r => r.RequestId,
+            text => r => (r.Reason != null && r.Reason.Contains(text)) || EF.Constant(named).Contains(r.EmployeeId), RequestDto.From);
     }
 
     private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
