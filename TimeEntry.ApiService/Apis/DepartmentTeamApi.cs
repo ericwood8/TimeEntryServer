@@ -1,125 +1,24 @@
-﻿namespace TimeEntry.ApiService.Apis;
+namespace TimeEntry.ApiService.Apis;
 
-
-using static Microsoft.AspNetCore.Http.TypedResults;
-
-public class DepartmentTeamApi<T> : BaseApi<T> where T : BaseNameActiveEntity
+/// <summary> The teams of a department. They are listed under their department, not as one list. </summary>
+public class DepartmentTeamApi : NamedCrudApi<DepartmentTeam, DepartmentTeam, DepartmentTeam>
 {
-    public override void Register(IEndpointRouteBuilder app)
+    protected override CrudStore<DepartmentTeam> Store(TimeEntryContext context) => CrudStore.For(new DepartmentTeamRepo(context));
+    protected override int KeyOf(DepartmentTeam row) => row.DepartmentTeamId;
+    protected override DepartmentTeam ToEntity(DepartmentTeam input) => input;
+    protected override DepartmentTeam ToOutput(DepartmentTeam row) => row;
+
+    protected override bool HasList => false;
+
+    protected override Task<List<DepartmentTeam>> FindByNameAsync(TimeEntryContext context, string name) => new DepartmentTeamRepo(context).GetByName(name);
+
+    protected override void RegisterExtras(IEndpointRouteBuilder app, string route, string singular, string plural)
     {
-        BreakIntoStrings(out string singular, out string plural, out string _apiSubDir);
+        app.MapGet(route + "/department/{id}", async (TimeEntryContext context, int id) => TypedResults.Ok(await new DepartmentTeamRepo(context).GetAllOfDepartment(id)))
+            .WithName($"Get{plural}OfDepartment")
+            .Produces<IEnumerable<DepartmentTeam>>()
+            .ProducesProblem(500);
 
-        // special - Get all of Department 
-        app.MapGet(_apiSubDir + "/department/{id}", GetAllOfDepartment)
-        .WithName($"Get{plural}OfDepartment")
-        .Produces<IEnumerable<T>>()
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Get by ID
-        app.MapGet(_apiSubDir + "/{id:int}", GetById)
-        .WithName($"Get{singular}ById")
-        .Produces<T>()
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Create new 
-        app.MapPost(_apiSubDir, CreateRow)
-        .WithName($"Create{singular}")
-        .ProducesProblem(400)
-        .ProducesProblem(422)
-        .ProducesProblem(500);
-
-        // Update existing 
-        app.MapPut(_apiSubDir + "/{id:int}", UpdateRow)
-        .WithName($"Update{singular}")
-        .ProducesProblem(400)
-        .ProducesProblem(404)
-        .ProducesProblem(422)
-        .ProducesProblem(500);
-
-        // Delete 
-        app.MapDelete(_apiSubDir + "/{id:int}", DeleteRow)
-        .WithName($"Delete{singular}")
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Get by Name
-        app.MapGet(_apiSubDir + "/{name}", GetByName)
-        .WithName($"Get{singular}ByName")
-        .Produces<List<T>>()
-        .ProducesProblem(400)
-        .ProducesProblem(500);
-    }
-
-    private static async Task<IResult> GetAllOfDepartment([FromServices] TimeEntryContext context, int id)
-    {
-        DepartmentTeamRepo repo = new(context);
-        var rows = await repo.GetAllOfDepartment(id);
-        return Ok(rows);
-    }
-
-    private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
-    {
-        DepartmentTeamRepo repo = new(context);
-        var row = await repo.GetByIdAsync(id);
-        return row != null ? Results.Ok(row) : Results.NotFound();
-    }
-
-    private static async Task<IResult> GetByName([FromServices] TimeEntryContext context, string name)
-    {
-        if (name.IsNameBad())
-            return ApiProblems.BadName(); // 400 error if bad characters or empty
-
-        DepartmentTeamRepo repo = new(context);
-        var rows = await repo.GetByName(name);
-        return Results.Ok(rows); // no match is an empty list, not a 404
-    }
-
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] DepartmentTeam newRow)
-    {
-        newRow.Name = newRow.Name.Trim();
-        if (newRow.Name.IsNameBad())
-            return ApiProblems.BadName();  // 400 error if bad characters or empty
-
-        DepartmentTeamRepo repo = new(context);
-        bool success = await repo.AddAsync(newRow);
-        if (success)
-            return Results.Created($"/api{_apiSubDir}/{newRow.DepartmentTeamId}", newRow);
-        else
-            return ApiProblems.DuplicateName(); // 422 error if Duplicate Name        
-    }
-
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] DepartmentTeam updatedRow)
-    {
-        if (updatedRow == null)
-            return Results.NotFound();
-        if (updatedRow.DepartmentTeamId != id)
-            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
-
-        updatedRow.Name = updatedRow.Name.Trim();
-        if (updatedRow.Name.IsNameBad())
-            return ApiProblems.BadName(); // 400 error if bad characters or empty
-
-        DepartmentTeamRepo repo = new(context);
-        if (!await repo.ExistsAsync(id))
-            return ApiProblems.NotFound(); // 404 error if there is no row with that id
-        var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        if (postUpdate == null)
-            return ApiProblems.DuplicateName(); // 422 error if Duplicate Name
-
-        return Results.Ok(postUpdate);
-    }
-
-    private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
-    {
-        DepartmentTeamRepo repo = new(context);
-        var successNum = await repo.DeleteAsync("DepartmentTeam", id);
-        if (successNum == 0)
-            return Results.Ok();
-        else if (successNum == -1)
-            return ApiProblems.NotFound(); // cannot delete because does not exist
-        else 
-            return ApiProblems.InUse(); // cannot delete because "in use"
+        base.RegisterExtras(app, route, singular, plural);
     }
 }

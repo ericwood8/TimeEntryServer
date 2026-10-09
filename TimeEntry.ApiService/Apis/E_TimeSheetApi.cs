@@ -1,122 +1,43 @@
-﻿using TimeEntry.ApiService.Security;
+using TimeEntry.ApiService.Security;
 
 namespace TimeEntry.ApiService.Apis;
 
-using static Microsoft.AspNetCore.Http.TypedResults;
-
-public class E_TimeSheetApi<T> : BaseApi<T> where T : class
+/// <summary> An employee's time sheets (the hours are in the details, see <see cref="E_TimeSheetDetailApi"/>). </summary>
+public class E_TimeSheetApi : OwnedCrudApi<E_TimeSheet, TimeSheetSave, TimeSheetDto>
 {
-    public override void Register(IEndpointRouteBuilder app)
-    {
-        BreakIntoStrings(out string singular, out string plural, out string _apiSubDir);
-
-        // Get all
-        app.MapGet(_apiSubDir, GetAll)
-       .WithName($"Get{plural}")
-       .Produces<IEnumerable<TimeSheetDto>>()
-       .Produces<PaginatedItems<TimeSheetDto>>()
-       .ProducesProblem(400)
-       .ProducesProblem(404)
-       .ProducesProblem(500);
-
-        // Get by ID
-        app.MapGet(_apiSubDir + "/{id:int}", GetById)
-        .WithName($"Get{singular}ById")
-        .Produces<TimeSheetDto>()
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Create new
-        app.MapPost(_apiSubDir, CreateRow)
-        .WithName($"Create{singular}")
-        .ProducesProblem(500);
-
-        // Update existing
-        app.MapPut(_apiSubDir + "/{id:int}", UpdateRow)
-        .WithName($"Update{singular}")
-        .ProducesProblem(400)
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Delete
-        app.MapDelete(_apiSubDir + "/{id:int}", DeleteRow)
-        .WithName($"Delete{singular}")
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-    }
-
     private static readonly SortMap<E_TimeSheet> sorts = new SortMap<E_TimeSheet>()
         .Add("whenEntered", t => t.WhenEntered).Add("timeSheetId", t => t.TimeSheetId).Add("employeeId", t => t.EmployeeId)
         .Add("employee", t => t.Employee!.Name).Add("notes", t => t.Notes);
 
+    protected override CrudStore<E_TimeSheet> Store(TimeEntryContext context) => CrudStore.For(new E_TimeSheetRepo(context));
+    protected override int KeyOf(E_TimeSheet row) => row.TimeSheetId;
+    protected override E_TimeSheet ToEntity(TimeSheetSave input) => input.ToEntity();
+    protected override TimeSheetDto ToOutput(E_TimeSheet row) => TimeSheetDto.From(row);
+    protected override Task<int?> OwnerOfAsync(CrudCall call, int id) => RowOwners.TimeSheet(call.Context, id);
+
+    protected override bool PagedList => true;
+
     /// <summary> The whole list, or (with pageIndex / pageSize) one page of it; sort and search apply to both. See <see cref="ListQuery"/>. </summary>
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context, ClaimsPrincipal user, [AsParameters] ListQuery query)
+    protected override async Task<IResult> ListAsync(CrudCall call, ListQuery query)
     {
-        var scope = await EmployeeScope.ForAsync(context, user);
+        var scope = await ScopeAsync(call);
         int[] ids = scope.EmployeeIds;
-        int[] named = await context.EmployeeIdsNamedAsync(query);
-        IQueryable<E_TimeSheet> rows = scope.All ? context.E_TimeSheet : context.E_TimeSheet.Where(t => ids.Contains(t.EmployeeId));
+        int[] named = await call.Context.EmployeeIdsNamedAsync(query);
+        IQueryable<E_TimeSheet> rows = scope.All ? call.Context.E_TimeSheet : call.Context.E_TimeSheet.Where(t => ids.Contains(t.EmployeeId));
         return await rows.ToResultAsync(query, sorts, "whenEntered:desc", t => t.TimeSheetId,
             text => t => (t.Notes != null && t.Notes.Contains(text)) || EF.Constant(named).Contains(t.EmployeeId), TimeSheetDto.From);
     }
 
-    private static async Task<IResult> GetById([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
+    protected override Task<IResult?> PrepareCreateAsync(CrudCall call, E_TimeSheet row, TimeSheetSave input) =>
+        Task.FromResult(OwnerFromToken(call, own => row.EmployeeId = own));
+
+    protected override async Task<IResult?> PrepareUpdateAsync(CrudCall call, int id, E_TimeSheet row, TimeSheetSave input)
     {
-        var scope = await EmployeeScope.ForAsync(context, user);
-        E_TimeSheetRepo repo = new(context);
-        var row = await repo.GetByIdAsync(id);
-        if (row == null)
-            return Results.NotFound();
-        return scope.Deny(row.EmployeeId) ?? Results.Ok(TimeSheetDto.From(row));
-    }
-
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, [FromBody] TimeSheetSave save)
-    {
-        E_TimeSheet newRow = save.ToEntity();
-        // whose time sheet it is comes from the token; only Admin and Human Resources may enter one for somebody else
-        if (!user.CanManageAll())
-        {
-            if (user.EmployeeId() == null)
-                return Results.Forbid();
-            newRow.EmployeeId = user.EmployeeId()!.Value;
-        }
-
-        E_TimeSheetRepo repo = new(context);
-        await repo.AddAsync(newRow);
-        return Results.Created($"/api{_apiSubDir}/{newRow.TimeSheetId}", TimeSheetDto.From(newRow));
-    }
-
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id, [FromBody] TimeSheetSave save)
-    {
-        E_TimeSheet updatedRow = save.ToEntity();
-        if (updatedRow.TimeSheetId != id)
-            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
-
-        var scope = await EmployeeScope.ForAsync(context, user);
-        int? owner = await RowOwners.TimeSheet(context, id);
-        if (scope.Deny(owner) is { } denied)
+        int? owner = await RowOwners.TimeSheet(call.Context, id);
+        if (await DenyAsync(call, owner) is { } denied)
             return denied; // 404 if there is no row with that id, 403 if it is not the caller's
-        if (!user.CanManageAll())
-            updatedRow.EmployeeId = owner!.Value; // the row cannot be handed to someone else
-
-        E_TimeSheetRepo repo = new(context);
-        var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(TimeSheetDto.From(postUpdate));
-    }
-
-    private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, ClaimsPrincipal user, int id)
-    {
-        var scope = await EmployeeScope.ForAsync(context, user);
-        if (scope.Deny(await RowOwners.TimeSheet(context, id)) is { } denied)
-            return denied;
-
-        E_TimeSheetRepo repo = new(context);
-        var successNum = await repo.DeleteAsync("E_TimeSheet", id);
-        if (successNum == 0)
-            return Results.Ok();
-        else if (successNum == -1)
-            return ApiProblems.NotFound(); // cannot delete because does not exist
-        else
-            return ApiProblems.InUse(); // cannot delete because "in use"
+        if (!call.User.CanManageAll())
+            row.EmployeeId = owner!.Value; // the row cannot be handed to someone else
+        return null;
     }
 }

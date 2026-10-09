@@ -1,115 +1,15 @@
-﻿namespace TimeEntry.ApiService.Apis;
+namespace TimeEntry.ApiService.Apis;
 
-using static Microsoft.AspNetCore.Http.TypedResults;
-
-public class HolidayApi<T> : BaseApi<T> where T : class
+/// <summary> Holidays: a name is checked, but two holidays may share one. Newest first. </summary>
+public class HolidayApi : NamedCrudApi<Holiday, Holiday, Holiday>
 {
-    public override void Register(IEndpointRouteBuilder app)
-    {
-        BreakIntoStrings(out string singular, out string plural, out string apiSubDir);
+    protected override CrudStore<Holiday> Store(TimeEntryContext context) => CrudStore.For(new HolidayRepo(context));
+    protected override int KeyOf(Holiday row) => row.HolidayId;
+    protected override Holiday ToEntity(Holiday input) => input;
+    protected override Holiday ToOutput(Holiday row) => row;
 
-        // Get all
-        app.MapGet(apiSubDir, GetAll)
-       .WithName($"Get{plural}")
-       .Produces<IEnumerable<T>>()
-       .ProducesProblem(404)
-       .ProducesProblem(500);
+    protected override async Task<IResult> ListAsync(CrudCall call, ListQuery query) =>
+        TypedResults.Ok(await new HolidayRepo(call.Context).GetAllOrderByDescending(c => c.Date));
 
-        // Get by ID
-        app.MapGet(apiSubDir + "/{id:int}", GetById)
-        .WithName($"Get{singular}ById")
-        .Produces<T>()
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Create new 
-        app.MapPost(apiSubDir, CreateRow)
-        .WithName($"Create{singular}")
-        .ProducesProblem(400)
-        .ProducesProblem(500);
-
-        // Update existing 
-        app.MapPut(apiSubDir + "/{id:int}", UpdateRow)
-        .WithName($"Update{singular}")
-        .ProducesProblem(400)
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Delete 
-        app.MapDelete(apiSubDir + "/{id:int}", DeleteRow)
-        .WithName($"Delete{singular}")
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Get by Name
-        app.MapGet(apiSubDir + "/{name}", GetByName)
-        .WithName($"Get{singular}ByName")
-        .Produces<List<T>>()
-        .ProducesProblem(400)
-        .ProducesProblem(500);
-    }
-
-    private static async Task<IResult> GetAll([FromServices] TimeEntryContext context)
-    {
-        HolidayRepo repo = new(context);
-        var rows = await repo.GetAllOrderByDescending(c => c.Date);
-        return Ok(rows);
-    }
-
-    private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
-    {
-        HolidayRepo repo = new(context);
-        var row = await repo.GetByIdAsync(id);
-        return row != null ? Results.Ok(row) : Results.NotFound();
-    }
-
-    private static async Task<IResult> GetByName([FromServices] TimeEntryContext context, string name)
-    {
-        if (name.IsNameBad())
-            return ApiProblems.BadName(); // 400 error if bad characters or empty
-
-        HolidayRepo repo = new(context);
-        var rows = await repo.GetByName(name);
-        return Results.Ok(rows); // no match is an empty list, not a 404
-    }
-
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] Holiday newRow)
-    {
-        newRow.Name = newRow.Name.Trim();
-        if (newRow.Name.IsNameBad())
-            return ApiProblems.BadName();  // 400 error if bad characters or empty
-        // SPECIAL - duplicate names is fine on holidays
-
-        HolidayRepo repo = new(context);
-        await repo.AddAsync(newRow);
-        return Results.Created($"/api/holidays/{newRow.HolidayId}", newRow);
-    }
-
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Holiday updatedRow)
-    {
-        if (updatedRow.HolidayId != id)
-            return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
-
-        if (updatedRow.Name.IsNameBad())
-            return ApiProblems.BadName(); // 400 error if bad characters or empty
-        // SPECIAL - duplicate names is fine on holidays
-
-        HolidayRepo repo = new(context);
-        if (!await repo.ExistsAsync(id))
-            return ApiProblems.NotFound(); // 404 error if there is no row with that id
-        var postUpdate = await repo.UpdateAsync(id, updatedRow);
-        return Results.Ok(postUpdate);
-    }
-
-    private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
-    {
-        HolidayRepo repo = new(context);
-        var successNum = await repo.DeleteAsync("Holiday", id);
-        if (successNum == 0)
-            return Results.Ok();
-        else if (successNum == -1)
-            return ApiProblems.NotFound(); // cannot delete because does not exist
-        else
-            return ApiProblems.InUse(); // cannot delete because "in use"
-    }
+    protected override Task<List<Holiday>> FindByNameAsync(TimeEntryContext context, string name) => new HolidayRepo(context).GetByName(name);
 }

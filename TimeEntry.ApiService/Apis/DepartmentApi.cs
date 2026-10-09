@@ -1,118 +1,25 @@
-﻿namespace TimeEntry.ApiService.Apis;
+namespace TimeEntry.ApiService.Apis;
 
-using Microsoft.IdentityModel.Tokens;
-using static Microsoft.AspNetCore.Http.TypedResults;
-
-public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
+/// <summary> Departments, listed with their teams. An update carries the teams too: see <see cref="UpdateAsync"/>. </summary>
+public class DepartmentApi : NamedCrudApi<Department, Department, Department>
 {
-    public DepartmentApi()
+    protected override CrudStore<Department> Store(TimeEntryContext context) => CrudStore.For(new DepartmentRepo(context));
+    protected override int KeyOf(Department row) => row.DepartmentId;
+    protected override Department ToEntity(Department input) => input;
+    protected override Department ToOutput(Department row) => row;
+
+    protected override async Task<IResult> ListAsync(CrudCall call, ListQuery query) =>
+        TypedResults.Ok(await new DepartmentRepo(call.Context).GetAllIncludeTeams());
+
+    protected override Task<List<Department>> FindByNameAsync(TimeEntryContext context, string name) => new DepartmentRepo(context).GetByName(name);
+
+    /// <summary>
+    /// The department and its team list are saved together (B10): a team sent with an id is renamed or changed, one sent without an id is added, one left out of
+    /// the list is removed unless something still uses it, and no list at all leaves the teams alone. Everything is one save, so it succeeds or fails as a whole.
+    /// </summary>
+    protected override async Task<IResult> UpdateAsync(CrudCall call, int id, Department updatedRow)
     {
-
-    }
-
-    public override void Register(IEndpointRouteBuilder app)
-    {
-        BreakIntoStrings(out string singular, out string plural, out string _apiSubDir);
-
-        // Get all
-        app.MapGet(_apiSubDir, GetAllIncludeTeams)
-       .WithName($"Get{plural}")
-       .Produces<IEnumerable<T>>()
-       .ProducesProblem(404)
-       .ProducesProblem(500);
-
-        // Get by ID
-        app.MapGet(_apiSubDir + "/{id:int}", GetById)
-        .WithName($"Get{singular}ById")
-        .Produces<T>()
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Create new 
-        app.MapPost(_apiSubDir, CreateRow)
-        .WithName($"Create{singular}")
-        .ProducesProblem(400)
-        .ProducesProblem(422)
-        .ProducesProblem(500);
-
-        // Update existing 
-        app.MapPut(_apiSubDir + "/{id:int}", UpdateRow)
-        .WithName($"Update{singular}")
-        .ProducesProblem(400)
-        .ProducesProblem(404)
-        .ProducesProblem(422)
-        .ProducesProblem(500);
-
-        // Delete 
-        app.MapDelete(_apiSubDir + "/{id:int}", DeleteRow)
-        .WithName($"Delete{singular}")
-        .ProducesProblem(404)
-        .ProducesProblem(500);
-
-        // Get by Name
-        app.MapGet(_apiSubDir + "/{name}", GetByName)
-        .WithName($"Get{singular}ByName")
-        .Produces<List<T>>()
-        .ProducesValidationProblem(400)
-        .ProducesProblem(500);
-    }
-
-    private static async Task<IResult> GetAllIncludeTeams([FromServices] TimeEntryContext context)
-    {
-        DepartmentRepo repo = new(context);
-        var rows = await repo.GetAllIncludeTeams();
-        return Ok(rows);
-    }
-
-    //private static async Task<Results<Ok<PaginatedItems<Department>>, BadRequest<string>>> GetPage([FromServices] TimeEntryContext context, [AsParameters] PaginationRequest paginationRequest)
-    //{        
-    //    var pageIndex = paginationRequest.PageIndex;
-    //    DepartmentRepo repo = new(context); 
-    //    var totalItems = repo.CountAsync();
-    //    var itemsOnPage = await repo.GetPage(pageSize, pageIndex)
-    //        .OrderBy(c => c.Name)
-    //        .Skip(_pageSize * pageIndex)
-    //        .Take(_pageSize)
-    //        .ToListAsync();
-
-    //    return Ok(new PaginatedItems<Department>(pageIndex, pageSize, totalItems, itemsOnPage));
-    //}
-
-    private static async Task<IResult> GetById([FromServices] TimeEntryContext context, int id)
-    {
-        DepartmentRepo repo = new(context);
-        var row = await repo.GetByIdAsync(id);
-        return row != null ? Results.Ok(row) : Results.NotFound();
-    }
-
-    private static async Task<IResult> GetByName([FromServices] TimeEntryContext context, string name)
-    {
-        if (name.IsNameBad())
-            return ApiProblems.BadName(); // 400 error if bad characters or empty
-
-        DepartmentRepo repo = new(context);
-        var rows = await repo.GetByName(name);
-        return Results.Ok(rows); // no match is an empty list, not a 404
-    }
-
-    private static async Task<IResult> CreateRow([FromServices] TimeEntryContext context, [FromBody] Department newRow)
-    {
-        newRow.Name = newRow.Name.Trim();
-        if (newRow.Name.IsNameBad())
-            return ApiProblems.BadName();  // 400 error if bad characters or empty
-
-        DepartmentRepo repo = new(context);
-        bool success = await repo.AddAsync(newRow);
-        if (success)
-            return Results.Created($"/api{_apiSubDir}/{newRow.DepartmentId}", newRow);
-        else 
-            return ApiProblems.DuplicateName(); // 422 error if Duplicate Name
-    }
-
-    private static async Task<IResult> UpdateRow([FromServices] TimeEntryContext context, int id, [FromBody] Department updatedRow)
-    {
-        if (updatedRow == null) 
-            return Results.NotFound();
+        TimeEntryContext context = call.Context;
         if (updatedRow.DepartmentId != id)
             return ApiProblems.IdMismatch(); // 400 error if the id in the URL and the id in the body disagree
 
@@ -163,18 +70,6 @@ public class DepartmentApi<T> : BaseApi<T> where T : BaseNameActiveEntity
         context.RemoveRange(teamsToRemove);
         await context.SaveChangesAsync();
 
-        return Results.Ok(stored); // the saved department with its current teams
-    }
-
-    private static async Task<IResult> DeleteRow([FromServices] TimeEntryContext context, int id)
-    {
-        DepartmentRepo repo = new(context);
-        var successNum = await repo.DeleteAsync("Department", id);
-        if (successNum == 0)
-            return Results.Ok();
-        else if (successNum == -1)
-            return ApiProblems.NotFound(); // cannot delete because does not exist
-        else
-            return ApiProblems.InUse(); // cannot delete because "in use"
+        return TypedResults.Ok(stored); // the saved department with its current teams
     }
 }

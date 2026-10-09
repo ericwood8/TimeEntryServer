@@ -1,6 +1,6 @@
 namespace TimeEntry.Common.Entities;
 
-public class Holiday : BaseEntity
+public class Holiday : BaseEntity, IHasName
 {
     #region Omitted
     [Key]

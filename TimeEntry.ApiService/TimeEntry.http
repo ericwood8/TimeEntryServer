@@ -1,0 +1,178 @@
+### TimeEntry API: every route, against the API itself (spec item E04).
+###
+### Run the API (dotnet run --project TimeEntry.ApiService, or the Aspire AppHost) and set @host to the address it listens on.
+### The API serves routes WITHOUT "/api": the "/api" prefix belongs to the UI's proxy, which strips it before it reaches here.
+### Every request but the sign-in needs the token from the first request. Put your own user name and password below
+### (never commit them); on an empty database the first user is the one in the Bootstrap settings (see the README).
+
+@host = http://localhost:5084
+@userName = your-user-name
+@password = your-password
+
+### Sign in: the token is used by every request below
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "userName": "{{userName}}", "password": "{{password}}" }
+
+###
+@token = {{login.response.body.$.token}}
+
+### ---------------------------------------------------------------- reference data (everyone reads; Admin and Human Resources write)
+
+### Departments (with their teams)
+GET {{host}}/departments
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/departments/1
+Authorization: Bearer {{token}}
+
+### A department is found by name (an empty list when none match)
+GET {{host}}/departments/Engineering
+Authorization: Bearer {{token}}
+
+### Add: a name of letters, digits, spaces, apostrophes and hyphens; 422 when an active department has it
+POST {{host}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "departmentId": 0, "name": "Example Department", "isActive": true, "isDefault": false }
+
+### Change: the teams in the body are changed, added or removed with it; leave "teams" out to leave them alone
+PUT {{host}}/departments/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "departmentId": 1, "name": "Example Department", "isActive": true, "isDefault": false }
+
+### Delete: 200, 404 when there is none, 400 when something uses it
+DELETE {{host}}/departments/1
+Authorization: Bearer {{token}}
+
+### Teams of one department
+GET {{host}}/departmentteams/department/1
+Authorization: Bearer {{token}}
+
+###
+POST {{host}}/departmentteams
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "departmentTeamId": 0, "departmentId": 1, "name": "Example Team", "isActive": true, "isDefault": false }
+
+### Employees (with manager, department and team)
+GET {{host}}/employees
+Authorization: Bearer {{token}}
+
+### Just the id and name of the active employees, for drop-downs
+GET {{host}}/employees/lookup
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/employees/1
+Authorization: Bearer {{token}}
+
+### Holidays: two may share a name
+GET {{host}}/holidays
+Authorization: Bearer {{token}}
+
+###
+POST {{host}}/holidays
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "holidayId": 0, "sY_IsoCountry_Alpha3Code": "USA", "date": "2026-12-25T00:00:00", "name": "Example Holiday" }
+
+### Projects (with their tasks) and the tasks
+GET {{host}}/projects
+Authorization: Bearer {{token}}
+
+###
+POST {{host}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "projectId": 0, "name": "Example Project", "isActive": true, "isDefault": false }
+
+###
+GET {{host}}/projecttasks
+Authorization: Bearer {{token}}
+
+### The tasks of one project
+GET {{host}}/projecttasks/project/1
+Authorization: Bearer {{token}}
+
+### Periods in which leave may not be taken
+GET {{host}}/restrictleaves
+Authorization: Bearer {{token}}
+
+### ---------------------------------------------------------------- an employee's own rows (each caller sees their own, their reports', or all as Admin / HR)
+### The big lists take ?pageIndex=0&pageSize=25&sort=column:desc&search=text and then answer { pageIndex, pageSize, count, data };
+### without a page parameter they answer the whole list as an array. A bad page, size or sort column is a 400 that names the choices.
+
+### Time sheets: newest first
+GET {{host}}/timesheets?pageIndex=0&pageSize=10&sort=whenEntered:desc
+Authorization: Bearer {{token}}
+
+###
+GET {{host}}/timesheets?pageIndex=0&pageSize=10&sort=employee:asc&search=smith
+Authorization: Bearer {{token}}
+
+### The owner is the signed-in employee, whoever the body names (Admin and HR may name anyone)
+POST {{host}}/timesheets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "timeSheetId": 0, "employeeId": 1, "whenEntered": "2026-10-05T00:00:00", "notes": "example" }
+
+### The details of one time sheet, with project and task names
+GET {{host}}/timesheetDetails/timeSheet/1
+Authorization: Bearer {{token}}
+
+###
+POST {{host}}/timesheetDetails
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "timeSheetDetailId": 0, "e_TimeSheetId": 1, "projectId": 1, "projectTaskId": 1,
+  "sundayHours": 0, "mondayHours": 8, "tuesdayHours": 0, "wednesdayHours": 0, "thursdayHours": 0, "fridayHours": 0, "saturdayHours": 0, "notes": "" }
+
+### Requests (the server sets when it was requested; nobody approves their own)
+GET {{host}}/requests?pageIndex=0&pageSize=10&sort=whenRequested:desc
+Authorization: Bearer {{token}}
+
+###
+POST {{host}}/requests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "requestId": 0, "employeeId": 1, "sY_RequestStatusTypeId": 0, "overtimeTypeId": 1, "overtimeHrsRequested": 2, "reason": "example overtime" }
+
+### Leave donations
+GET {{host}}/donateleaves?pageIndex=0&pageSize=10
+Authorization: Bearer {{token}}
+
+### Expense sheets (with their details) and the details
+GET {{host}}/expenseSheets?pageIndex=0&pageSize=10
+Authorization: Bearer {{token}}
+
+###
+POST {{host}}/expenseSheets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "requestExpenseSheetId": 0, "projectId": 1, "employeeId": 1, "notes": "example" }
+
+###
+GET {{host}}/expenseDetails?pageIndex=0&pageSize=10
+Authorization: Bearer {{token}}
+
+### Responses to requests (managers, HR and Admin write)
+GET {{host}}/responses?pageIndex=0&pageSize=10
+Authorization: Bearer {{token}}
+
+### ---------------------------------------------------------------- users (Admin only; a password or answer is never shown)
+GET {{host}}/timeentryusers
+Authorization: Bearer {{token}}

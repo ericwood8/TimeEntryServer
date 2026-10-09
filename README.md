@@ -190,3 +190,13 @@ dotnet run --project TimeEntry.Cli -- --help
 ```
 
 It signs in on every run (password from `-P`, `TIMEENTRY_PASSWORD`, or a hidden prompt). The API allows about 5 sign-ins a minute, so a script should sign in once: `export TIMEENTRY_TOKEN=$(timeentry -U Boss login)`. Nothing is saved to disk. `dotnet pack TimeEntry.Cli` makes a .NET tool you can install with `dotnet tool install -g`.
+
+## The API classes
+
+Every table's API is a small class on one of three bases in `TimeEntry.ApiService/Apis`, so the five standard endpoints (list, get by id, create, update, delete) and their answers are written once in `CrudApi`:
+
+- `CrudApi<TEntity, TInput, TOutput>`: 201 with a `Location` for a create, 400 for an id that disagrees with the body, 404 for a missing row, 422 for a name another active row has, 400 for a row that is in use. A class says its repository (`Store`), key, mapping and list, and overrides only what is its own: `PrepareCreateAsync` / `PrepareUpdateAsync` for rules, `AuthorizeAsync` for who may read or delete a row, `RegisterExtras` for routes of its own, `CreateAsync` / `UpdateAsync` when a whole step differs (a department and its teams, a user and a password).
+- `NamedCrudApi`: also trims and checks the name and adds `GET /route/{name}`.
+- `OwnedCrudApi`: a row that belongs to an employee; the caller may use it when it is theirs, a report's, or when they are Admin or Human Resources.
+
+To add a table: write the entity and repository, write a class like `HolidayApi` (15 lines for a plain table), and add one line to `ApiRegisterExtension` in the group whose role rule fits. `TimeEntry.ApiService/TimeEntry.http` has a request for every route.
