@@ -113,8 +113,19 @@ Before beginning, make sure you have the following tools installed:
 
 ### Step 3: Set Up the Database 
 
-1. Unzip the zip files found in TimeEntryDB.
-2. Follow the TimeEntryDB instructions to attach the database.
+A new, empty database (the scripts are in the TimeEntryDB repo, folder `database`; needs only a SQL Server login that can create a database; no attach permissions):
+
+```
+sqlcmd -S <server> -E -C -Q "CREATE DATABASE TimeEntry"
+sqlcmd -S <server> -E -C -d TimeEntry -b -i TimeEntryDB/database/schema.sql
+sqlcmd -S <server> -E -C -d TimeEntry -b -i TimeEntryDB/database/seed.sql
+```
+
+`schema.sql` (tables, keys, indexes, `spCanDelete` and the other procedures) and `seed.sql` (the lookup rows) are safe to run again. They are generated from the live database
+with `TimeEntryDB/database/Generate-Scripts.ps1`; do not edit them by hand.
+
+An existing database from the zipped MDF in TimeEntryDB (attach it as its README says): run `TimeEntryDB/database/E07_UpgradeSchema.sql` once (safe to run again). It makes the expense sheet and
+detail keys IDENTITY, renames `TimeEntryUser.UserName` to `Name`, and adds the 0 to 24 hours check. This version of the API needs it.
 
 ---
 
